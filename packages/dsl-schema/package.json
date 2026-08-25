@@ -1,0 +1,10 @@
+{
+  "name": "@testforge/dsl-schema",
+  "version": "1.0.0",
+  "description": "Shared DSL schema definitions for TestForge test workflows",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  }
+}

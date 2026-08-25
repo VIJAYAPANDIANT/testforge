@@ -1,0 +1,21 @@
+{
+  "name": "testforge",
+  "version": "1.0.0",
+  "description": "A no-code browser test automation platform that converts visual test workflows into executable Playwright tests.",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/server",
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:client": "npm run dev --workspace=apps/client",
+    "dev:all": "npm run dev --workspaces --if-present",
+    "start": "npm run start --workspace=apps/server",
+    "install:all": "npm install --workspaces"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

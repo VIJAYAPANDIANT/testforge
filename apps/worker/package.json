@@ -1,0 +1,6 @@
+{
+  "name": "@testforge/worker",
+  "version": "1.0.0",
+  "description": "TestForge Playwright execution worker — placeholder for Week 3",
+  "private": true
+}
