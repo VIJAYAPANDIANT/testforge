@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import healthRoutes from './routes/health.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import { notFound, errorHandler } from './middleware/error.middleware.js';
 
 const app = express();
 
@@ -26,5 +28,14 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
+
+// ─── Error Handling ───────────────────────────────────────────────────────────
+
+// 404 — must come after all valid routes
+app.use(notFound);
+
+// Centralized error handler — must be last (4 args)
+app.use(errorHandler);
 
 export default app;
