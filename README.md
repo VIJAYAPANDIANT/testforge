@@ -21,6 +21,7 @@ Playwright Worker (apps/worker)
 🚧 Week 1 — Backend Foundation
 ✅ Day 1 — Express server, MongoDB connection, health check
 ✅ Day 2 — JWT Authentication completed
+✅ Day 3 — Project and Test Case CRUD completed
 ```
 
 ## Repository Structure
@@ -32,10 +33,10 @@ testforge/
 │   ├── server/              # Express REST API ← active
 │   │   └── src/
 │   │       ├── config/      # MongoDB connection
-│   │       ├── controllers/ # Route business logic
+│   │       ├── controllers/ # Auth, Project, TestCase controllers
 │   │       ├── middleware/  # Auth + error handling
-│   │       ├── models/      # Mongoose models
-│   │       ├── routes/      # Express routers
+│   │       ├── models/      # User, Project, TestCase Mongoose models
+│   │       ├── routes/      # Auth, Health, Project, TestCase routers
 │   │       └── utils/       # Shared utilities
 │   └── worker/              # Playwright execution worker (coming Week 3)
 │
@@ -56,37 +57,25 @@ testforge/
 | `POST` | `/api/auth/login` | ❌ | Login and receive a JWT |
 | `GET` | `/api/auth/me` | ✅ Bearer | Get current user |
 
-### Register
+## Projects API
 
-```http
-POST /api/auth/register
-Content-Type: application/json
+| Method | Endpoint | Auth Required | Description |
+|--------|----------|:---:|---|
+| `POST` | `/api/projects` | ✅ Bearer | Create a new project |
+| `GET` | `/api/projects` | ✅ Bearer | Get all projects owned by user |
+| `GET` | `/api/projects/:id` | ✅ Bearer | Get project by ID |
+| `PATCH` | `/api/projects/:id` | ✅ Bearer | Update project details |
+| `DELETE` | `/api/projects/:id` | ✅ Bearer | Delete a project |
 
-{
-  "name": "Test User",
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
+## Test Cases API
 
-### Login
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-### Get Current User
-
-```http
-GET /api/auth/me
-Authorization: Bearer <JWT_TOKEN>
-```
+| Method | Endpoint | Auth Required | Description |
+|--------|----------|:---:|---|
+| `POST` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Create test case in project |
+| `GET` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Get all test cases in project |
+| `GET` | `/api/test-cases/:id` | ✅ Bearer | Get test case by ID |
+| `PATCH` | `/api/test-cases/:id` | ✅ Bearer | Update test case (name, description, dsl) |
+| `DELETE` | `/api/test-cases/:id` | ✅ Bearer | Delete a test case |
 
 ## Utility API
 
@@ -139,6 +128,8 @@ The API will be available at:
 - `http://localhost:5000/api/auth/register` — Register
 - `http://localhost:5000/api/auth/login` — Login
 - `http://localhost:5000/api/auth/me` — Get current user (protected)
+- `http://localhost:5000/api/projects` — Projects management
+- `http://localhost:5000/api/test-cases` — Test Cases management
 
 ## Packages
 
