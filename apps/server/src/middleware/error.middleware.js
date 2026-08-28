@@ -37,7 +37,7 @@ export const errorHandler = (err, req, res, next) => {
     message = `Invalid value for field: ${err.path}`;
   }
 
-  // ── JWT errors (should normally be caught in middleware, belt-and-suspenders)
+  // ── JWT errors ───────────────────────────────────────────────────────────
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token. Please log in again.';
@@ -52,6 +52,11 @@ export const errorHandler = (err, req, res, next) => {
     success: false,
     message,
   };
+
+  // Include errors array if attached to error object
+  if (err.errors && Array.isArray(err.errors)) {
+    response.errors = err.errors;
+  }
 
   if (process.env.NODE_ENV === 'development' && statusCode === 500) {
     response.stack = err.stack;

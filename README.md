@@ -22,6 +22,7 @@ Playwright Worker (apps/worker)
 ✅ Day 1 — Express server, MongoDB connection, health check
 ✅ Day 2 — JWT Authentication completed
 ✅ Day 3 — Project and Test Case CRUD completed
+✅ Day 4 — API validation and testing completed
 ```
 
 ## Repository Structure
@@ -34,11 +35,15 @@ testforge/
 │   │   └── src/
 │   │       ├── config/      # MongoDB connection
 │   │       ├── controllers/ # Auth, Project, TestCase controllers
-│   │       ├── middleware/  # Auth + error handling
+│   │       ├── middleware/  # Auth, ObjectId & error handling middleware
 │   │       ├── models/      # User, Project, TestCase Mongoose models
 │   │       ├── routes/      # Auth, Health, Project, TestCase routers
 │   │       └── utils/       # Shared utilities
 │   └── worker/              # Playwright execution worker (coming Week 3)
+│
+├── docs/
+│   ├── API_TESTING.md       # Complete API testing guide
+│   └── postman/             # Postman collection & environment
 │
 ├── packages/
 │   └── dsl-schema/          # Shared test workflow schema
@@ -48,6 +53,15 @@ testforge/
 ├── package.json
 └── README.md
 ```
+
+## API Testing & Quality Assurance
+
+- **Postman Collection**: Pre-configured collection at [`docs/postman/TestForge_API.postman_collection.json`](file:///c:/testforge/testforge/docs/postman/TestForge_API.postman_collection.json) with automated environment variable capture (`authToken`, `projectId`, `testCaseId`).
+- **Postman Environment**: Environment configuration file at [`docs/postman/TestForge_Local.postman_environment.json`](file:///c:/testforge/testforge/docs/postman/TestForge_Local.postman_environment.json).
+- **API Testing Guide**: Comprehensive instructions at [`docs/API_TESTING.md`](file:///c:/testforge/testforge/docs/API_TESTING.md).
+- **Validation**: Strict input validation for Auth, Project, and Test Case payloads. Protected field updates (`user`, `_id`, etc.) are explicitly rejected.
+- **Ownership Security**: Multi-tenant authorization enforces `user: req.user._id` across all queries, returning `404 Not Found` for unauthorized resource access.
+- **Error Handling**: Centralized error middleware standardizes responses for Mongoose validation, CastErrors, duplicate keys, and JWT errors.
 
 ## Authentication API
 

@@ -135,6 +135,18 @@ export const updateProject = async (req, res, next) => {
       });
     }
 
+    // Explicitly reject updating disallowed fields (e.g. user, _id, createdAt, updatedAt)
+    const allowedFields = ['name', 'description'];
+    const bodyKeys = Object.keys(req.body || {});
+    const disallowedKeys = bodyKeys.filter((key) => !allowedFields.includes(key));
+
+    if (disallowedKeys.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Updating field(s) '${disallowedKeys.join(', ')}' is not allowed`,
+      });
+    }
+
     const { name, description } = req.body;
     const updates = {};
     const errors = [];
