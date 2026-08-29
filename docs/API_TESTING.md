@@ -55,6 +55,7 @@ The Postman collection includes embedded test scripts that automatically capture
 
 - **Register / Login**: Saves `authToken` automatically.
 - **Create Project**: Saves `projectId` automatically.
+- **Create Environment**: Saves `environmentId` automatically.
 - **Create Test Case**: Saves `testCaseId` automatically.
 
 ---
@@ -78,22 +79,30 @@ Execute the API requests in the following sequence for full end-to-end verificat
 8. `GET /api/projects/:id` — Fetch project details (`200 OK`)
 9. `PATCH /api/projects/:id` — Update project name or description (`200 OK`)
 
-### Step 4: Test Cases
-10. `POST /api/projects/:projectId/test-cases` — Create a test case in project (`201 Created`, populates `testCaseId`)
-11. `GET /api/projects/:projectId/test-cases` — List all test cases in project (`200 OK`)
-12. `GET /api/test-cases/:id` — Fetch single test case by ID (`200 OK`)
-13. `PATCH /api/test-cases/:id` — Update test case name, description, or DSL (`200 OK`)
+### Step 4: Environments
+10. `POST /api/projects/:projectId/environments` — Create an environment (`201 Created`, populates `environmentId`)
+11. `GET /api/projects/:projectId/environments` — List all environments for project (`200 OK`)
+12. `GET /api/environments/:id` — Fetch single environment by ID (`200 OK`)
+13. `PATCH /api/environments/:id` — Update environment name or baseUrl (`200 OK`)
 
-### Step 5: Cleanup & Deletion
-14. `DELETE /api/test-cases/:id` — Delete test case (`200 OK`)
-15. `DELETE /api/projects/:id` — Delete project (`200 OK`)
+### Step 5: Test Cases
+14. `POST /api/projects/:projectId/test-cases` — Create a test case in project (`201 Created`, populates `testCaseId`)
+15. `GET /api/projects/:projectId/test-cases` — List all test cases in project (`200 OK`)
+16. `GET /api/test-cases/:id` — Fetch single test case by ID (`200 OK`)
+17. `PATCH /api/test-cases/:id` — Update test case name, description, or DSL (`200 OK`)
+
+### Step 6: Cleanup & Deletion
+18. `DELETE /api/test-cases/:id` — Delete test case (`200 OK`)
+19. `DELETE /api/environments/:id` — Delete environment (`200 OK`)
+20. `DELETE /api/projects/:id` — Delete project (`200 OK`)
 
 ---
 
 ## 4. Negative Test Scenarios to Verify
 
 - **Missing / Invalid Auth Token**: Call protected route (`GET /api/auth/me` or `/api/projects`) without token or with malformed token $\rightarrow$ `401 Unauthorized`
-- **Invalid MongoDB ObjectId**: Pass `/api/projects/invalid-id` or `/api/test-cases/12345` $\rightarrow$ `404 Not Found`
-- **Cross-User Access (Ownership Check)**: Attempt to fetch or modify another user's project ID $\rightarrow$ `404 Not Found`
-- **Protected Field Updates**: Attempt to PATCH `user` or `_id` on projects/test-cases $\rightarrow$ `400 Bad Request`
-- **Validation Failure**: Register with short password or create test case with non-object DSL $\rightarrow$ `400 Bad Request`
+- **Invalid MongoDB ObjectId**: Pass `/api/projects/invalid-id` or `/api/environments/12345` $\rightarrow$ `404 Not Found`
+- **Cross-User Access (Ownership Check)**: Attempt to fetch or modify another user's project, environment, or test case $\rightarrow$ `404 Not Found`
+- **Invalid Base URL**: Create environment with `baseUrl: "ftp://invalid.com"` or `"invalid-url"` $\rightarrow$ `400 Bad Request`
+- **Duplicate Environment Name**: Create two environments named `"Staging"` in the same project $\rightarrow$ `409 Conflict`
+- **Protected Field Updates**: Attempt to PATCH `user` or `project` on environments $\rightarrow$ `400 Bad Request`

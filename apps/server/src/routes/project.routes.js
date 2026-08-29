@@ -7,6 +7,7 @@ import {
   deleteProject,
 } from '../controllers/project.controller.js';
 import { createTestCase, getTestCases } from '../controllers/testCase.controller.js';
+import { createEnvironment, getEnvironments } from '../controllers/environment.controller.js';
 import protect from '../middleware/auth.middleware.js';
 import { validateObjectId } from '../middleware/validateObjectId.middleware.js';
 
@@ -25,5 +26,9 @@ router.delete('/:id', validateObjectId('id', 'Project'), deleteProject);
 // Nested Test Case routes within a project
 router.post('/:projectId/test-cases', validateObjectId('projectId', 'Project'), createTestCase);
 router.get('/:projectId/test-cases', validateObjectId('projectId', 'Project'), getTestCases);
+
+// Nested Environment routes within a project
+router.post('/:projectId/environments', validateObjectId('projectId', 'Project'), createEnvironment);
+router.get('/:projectId/environments', validateObjectId('projectId', 'Project'), getEnvironments);
 
 export default router;

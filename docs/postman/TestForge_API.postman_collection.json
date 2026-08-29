@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "TestForge API",
-    "description": "Complete Postman API Collection for TestForge (Health, Auth, Projects, Test Cases)",
+    "description": "Complete Postman API Collection for TestForge (Health, Auth, Projects, Environments, Test Cases)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -260,6 +260,134 @@
               "raw": "{{baseUrl}}/api/projects/{{projectId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "projects", "{{projectId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Environments",
+      "item": [
+        {
+          "name": "Create Environment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.environment && jsonData.data.environment.id) {",
+                  "        pm.environment.set('environmentId', jsonData.data.environment.id);",
+                  "        console.log('Saved environmentId:', jsonData.data.environment.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Staging\",\n  \"baseUrl\": \"https://staging.example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/environments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}", "environments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Project Environments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/environments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}", "environments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Environment By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/environments/{{environmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "environments", "{{environmentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Environment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Production\",\n  \"baseUrl\": \"https://example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/environments/{{environmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "environments", "{{environmentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Environment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/environments/{{environmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "environments", "{{environmentId}}"]
             }
           },
           "response": []

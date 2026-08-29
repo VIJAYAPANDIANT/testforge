@@ -18,11 +18,12 @@ Playwright Worker (apps/worker)
 ## Current Status
 
 ```
-🚧 Week 1 — Backend Foundation
+🚧 Week 1 — Backend Foundation (Completed)
 ✅ Day 1 — Express server, MongoDB connection, health check
 ✅ Day 2 — JWT Authentication completed
 ✅ Day 3 — Project and Test Case CRUD completed
 ✅ Day 4 — API validation and testing completed
+✅ Day 5 — Environment management & Week 1 release ready
 ```
 
 ## Repository Structure
@@ -34,10 +35,10 @@ testforge/
 │   ├── server/              # Express REST API ← active
 │   │   └── src/
 │   │       ├── config/      # MongoDB connection
-│   │       ├── controllers/ # Auth, Project, TestCase controllers
+│   │       ├── controllers/ # Auth, Project, TestCase, Environment controllers
 │   │       ├── middleware/  # Auth, ObjectId & error handling middleware
-│   │       ├── models/      # User, Project, TestCase Mongoose models
-│   │       ├── routes/      # Auth, Health, Project, TestCase routers
+│   │       ├── models/      # User, Project, TestCase, Environment Mongoose models
+│   │       ├── routes/      # Auth, Health, Project, TestCase, Environment routers
 │   │       └── utils/       # Shared utilities
 │   └── worker/              # Playwright execution worker (coming Week 3)
 │
@@ -56,10 +57,10 @@ testforge/
 
 ## API Testing & Quality Assurance
 
-- **Postman Collection**: Pre-configured collection at [`docs/postman/TestForge_API.postman_collection.json`](file:///c:/testforge/testforge/docs/postman/TestForge_API.postman_collection.json) with automated environment variable capture (`authToken`, `projectId`, `testCaseId`).
+- **Postman Collection**: Pre-configured collection at [`docs/postman/TestForge_API.postman_collection.json`](file:///c:/testforge/testforge/docs/postman/TestForge_API.postman_collection.json) with automated environment variable capture (`authToken`, `projectId`, `environmentId`, `testCaseId`).
 - **Postman Environment**: Environment configuration file at [`docs/postman/TestForge_Local.postman_environment.json`](file:///c:/testforge/testforge/docs/postman/TestForge_Local.postman_environment.json).
 - **API Testing Guide**: Comprehensive instructions at [`docs/API_TESTING.md`](file:///c:/testforge/testforge/docs/API_TESTING.md).
-- **Validation**: Strict input validation for Auth, Project, and Test Case payloads. Protected field updates (`user`, `_id`, etc.) are explicitly rejected.
+- **Validation**: Strict input validation for Auth, Project, Environment (HTTP/HTTPS URL check), and Test Case payloads. Protected field updates (`user`, `_id`, etc.) are explicitly rejected.
 - **Ownership Security**: Multi-tenant authorization enforces `user: req.user._id` across all queries, returning `404 Not Found` for unauthorized resource access.
 - **Error Handling**: Centralized error middleware standardizes responses for Mongoose validation, CastErrors, duplicate keys, and JWT errors.
 
@@ -80,6 +81,16 @@ testforge/
 | `GET` | `/api/projects/:id` | ✅ Bearer | Get project by ID |
 | `PATCH` | `/api/projects/:id` | ✅ Bearer | Update project details |
 | `DELETE` | `/api/projects/:id` | ✅ Bearer | Delete a project |
+
+## Environments API
+
+| Method | Endpoint | Auth Required | Description |
+|--------|----------|:---:|---|
+| `POST` | `/api/projects/:projectId/environments` | ✅ Bearer | Create environment in project |
+| `GET` | `/api/projects/:projectId/environments` | ✅ Bearer | Get all environments for project |
+| `GET` | `/api/environments/:id` | ✅ Bearer | Get environment by ID |
+| `PATCH` | `/api/environments/:id` | ✅ Bearer | Update environment (name, baseUrl) |
+| `DELETE` | `/api/environments/:id` | ✅ Bearer | Delete environment |
 
 ## Test Cases API
 
@@ -143,6 +154,7 @@ The API will be available at:
 - `http://localhost:5000/api/auth/login` — Login
 - `http://localhost:5000/api/auth/me` — Get current user (protected)
 - `http://localhost:5000/api/projects` — Projects management
+- `http://localhost:5000/api/environments` — Environments management
 - `http://localhost:5000/api/test-cases` — Test Cases management
 
 ## Packages
