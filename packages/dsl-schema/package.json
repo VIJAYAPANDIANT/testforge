@@ -1,10 +1,14 @@
 {
   "name": "@testforge/dsl-schema",
   "version": "1.0.0",
-  "description": "Shared DSL schema definitions for TestForge test workflows",
+  "description": "Shared DSL schema definitions and validator for TestForge test workflows",
   "type": "module",
   "main": "src/index.js",
+  "types": "index.d.ts",
   "exports": {
     ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test tests/dsl-schema.test.js"
   }
 }

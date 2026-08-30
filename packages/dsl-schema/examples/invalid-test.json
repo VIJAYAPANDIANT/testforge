@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "name": "Invalid Test Example",
+  "description": "Demonstrates intentional DSL validation failures for testing purposes",
+  "steps": [
+    {
+      "id": "step-1",
+      "type": "navigate",
+      "url": "ftp://invalid-protocol.com"
+    },
+    {
+      "id": "step-1",
+      "type": "hover"
+    },
+    {
+      "id": "step-3",
+      "type": "click",
+      "locator": {
+        "strategy": "xpath",
+        "value": "//button"
+      }
+    },
+    {
+      "id": "step-4",
+      "type": "wait",
+      "duration": 50
+    }
+  ]
+}

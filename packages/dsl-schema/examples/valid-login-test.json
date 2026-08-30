@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "name": "Login Test",
+  "description": "Verify user can log in successfully",
+  "steps": [
+    {
+      "id": "step-1",
+      "type": "navigate",
+      "url": "{{BASE_URL}}/login"
+    },
+    {
+      "id": "step-2",
+      "type": "fill",
+      "locator": {
+        "strategy": "css",
+        "value": "#email"
+      },
+      "value": "test@example.com"
+    },
+    {
+      "id": "step-3",
+      "type": "fill",
+      "locator": {
+        "strategy": "css",
+        "value": "#password"
+      },
+      "value": "password123"
+    },
+    {
+      "id": "step-4",
+      "type": "click",
+      "locator": {
+        "strategy": "role",
+        "value": "button",
+        "name": "Login"
+      },
+      "fallbackLocator": {
+        "strategy": "css",
+        "value": "#login-button"
+      }
+    },
+    {
+      "id": "step-5",
+      "type": "assertVisible",
+      "locator": {
+        "strategy": "text",
+        "value": "Welcome"
+      }
+    },
+    {
+      "id": "step-6",
+      "type": "assertText",
+      "locator": {
+        "strategy": "css",
+        "value": ".welcome-message"
+      },
+      "expectedText": "Welcome"
+    },
+    {
+      "id": "step-7",
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "id": "step-8",
+      "type": "screenshot",
+      "name": "login-success",
+      "fullPage": true
+    }
+  ]
+}

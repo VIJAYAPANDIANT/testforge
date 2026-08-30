@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { validateTestDsl } from '@testforge/dsl-schema';
 import TestCase from '../models/TestCase.js';
 import Project from '../models/Project.js';
 
@@ -48,23 +49,23 @@ export const createTestCase = async (req, res, next) => {
     const errors = [];
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      errors.push('Test case name is required');
+      errors.push({ path: 'name', message: 'Test case name is required' });
     } else if (name.trim().length < 2) {
-      errors.push('Test case name must be at least 2 characters');
+      errors.push({ path: 'name', message: 'Test case name must be at least 2 characters' });
     } else if (name.trim().length > 150) {
-      errors.push('Test case name must not exceed 150 characters');
+      errors.push({ path: 'name', message: 'Test case name must not exceed 150 characters' });
     }
 
     if (description !== undefined && description !== null) {
       if (typeof description !== 'string') {
-        errors.push('Description must be a string');
+        errors.push({ path: 'description', message: 'Description must be a string' });
       } else if (description.trim().length > 1000) {
-        errors.push('Description must not exceed 1000 characters');
+        errors.push({ path: 'description', message: 'Description must not exceed 1000 characters' });
       }
     }
 
     if (!dsl || !isObject(dsl)) {
-      errors.push('DSL workflow JSON object is required');
+      errors.push({ path: 'dsl', message: 'DSL workflow JSON object is required' });
     }
 
     if (errors.length > 0) {
@@ -75,12 +76,22 @@ export const createTestCase = async (req, res, next) => {
       });
     }
 
+    // Validate full DSL schema using shared validator
+    const dslValidation = validateTestDsl(dsl);
+    if (!dslValidation.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid test DSL',
+        errors: dslValidation.errors,
+      });
+    }
+
     const testCase = await TestCase.create({
       name: name.trim(),
       description: description ? description.trim() : '',
       project: projectId,
       user: req.user._id,
-      dsl,
+      dsl: dslValidation.data,
     });
 
     return res.status(201).json({
@@ -202,11 +213,11 @@ export const updateTestCase = async (req, res, next) => {
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
-        errors.push('Test case name cannot be empty');
+        errors.push({ path: 'name', message: 'Test case name cannot be empty' });
       } else if (name.trim().length < 2) {
-        errors.push('Test case name must be at least 2 characters');
+        errors.push({ path: 'name', message: 'Test case name must be at least 2 characters' });
       } else if (name.trim().length > 150) {
-        errors.push('Test case name must not exceed 150 characters');
+        errors.push({ path: 'name', message: 'Test case name must not exceed 150 characters' });
       } else {
         updates.name = name.trim();
       }
@@ -214,9 +225,9 @@ export const updateTestCase = async (req, res, next) => {
 
     if (description !== undefined && description !== null) {
       if (typeof description !== 'string') {
-        errors.push('Description must be a string');
+        errors.push({ path: 'description', message: 'Description must be a string' });
       } else if (description.trim().length > 1000) {
-        errors.push('Description must not exceed 1000 characters');
+        errors.push({ path: 'description', message: 'Description must not exceed 1000 characters' });
       } else {
         updates.description = description.trim();
       }
@@ -224,9 +235,17 @@ export const updateTestCase = async (req, res, next) => {
 
     if (dsl !== undefined) {
       if (!isObject(dsl)) {
-        errors.push('DSL workflow must be a JSON object');
+        errors.push({ path: 'dsl', message: 'DSL workflow must be a JSON object' });
       } else {
-        updates.dsl = dsl;
+        const dslValidation = validateTestDsl(dsl);
+        if (!dslValidation.success) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid test DSL',
+            errors: dslValidation.errors,
+          });
+        }
+        updates.dsl = dslValidation.data;
       }
     }
 

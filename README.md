@@ -18,20 +18,31 @@ Playwright Worker (apps/worker)
 ## Current Status
 
 ```
-🚧 Week 1 — Backend Foundation (Completed)
-✅ Day 1 — Express server, MongoDB connection, health check
-✅ Day 2 — JWT Authentication completed
-✅ Day 3 — Project and Test Case CRUD completed
-✅ Day 4 — API validation and testing completed
-✅ Day 5 — Environment management & Week 1 release ready
+🚧 Week 2 — Code Generation Engine
+✅ Day 6 — Formal DSL Schema & Validator completed
 ```
+
+## Test Workflow DSL (Domain-Specific Language)
+
+TestForge supports a formal JSON-based DSL for defining browser end-to-end test workflows. The schema is defined in `@testforge/dsl-schema` and shared across the API, code generator, and frontend.
+
+Supported step types:
+- **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}`)
+- **`click`**: Click an element using `role`, `text`, or `css` locator
+- **`fill`**: Input text into a form field
+- **`assertVisible`**: Assert an element is visible in the DOM
+- **`assertText`**: Assert an element contains expected text
+- **`wait`**: Pause execution for a specified duration in milliseconds
+- **`screenshot`**: Capture a page screenshot
+
+Full specification document available at [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md).
 
 ## Repository Structure
 
 ```
 testforge/
 ├── apps/
-│   ├── client/              # React frontend  (coming Week 2)
+│   ├── client/              # React frontend  (coming Week 3)
 │   ├── server/              # Express REST API ← active
 │   │   └── src/
 │   │       ├── config/      # MongoDB connection
@@ -43,11 +54,15 @@ testforge/
 │   └── worker/              # Playwright execution worker (coming Week 3)
 │
 ├── docs/
+│   ├── DSL_SPEC.md          # Complete TestForge DSL specification v1.0
 │   ├── API_TESTING.md       # Complete API testing guide
 │   └── postman/             # Postman collection & environment
 │
 ├── packages/
-│   └── dsl-schema/          # Shared test workflow schema
+│   └── dsl-schema/          # Shared DSL schema & validation engine
+│       ├── src/             # Schema constants and validateTestDsl validator
+│       ├── examples/        # Sample valid and invalid DSL workflows
+│       └── tests/           # Unit test suite for DSL validator
 │
 ├── .env.example
 ├── .gitignore
@@ -60,7 +75,7 @@ testforge/
 - **Postman Collection**: Pre-configured collection at [`docs/postman/TestForge_API.postman_collection.json`](file:///c:/testforge/testforge/docs/postman/TestForge_API.postman_collection.json) with automated environment variable capture (`authToken`, `projectId`, `environmentId`, `testCaseId`).
 - **Postman Environment**: Environment configuration file at [`docs/postman/TestForge_Local.postman_environment.json`](file:///c:/testforge/testforge/docs/postman/TestForge_Local.postman_environment.json).
 - **API Testing Guide**: Comprehensive instructions at [`docs/API_TESTING.md`](file:///c:/testforge/testforge/docs/API_TESTING.md).
-- **Validation**: Strict input validation for Auth, Project, Environment (HTTP/HTTPS URL check), and Test Case payloads. Protected field updates (`user`, `_id`, etc.) are explicitly rejected.
+- **Validation**: Strict input validation for Auth, Project, Environment (HTTP/HTTPS URL check), and Test Case payloads (validated via `@testforge/dsl-schema`). Protected field updates (`user`, `_id`, etc.) are explicitly rejected.
 - **Ownership Security**: Multi-tenant authorization enforces `user: req.user._id` across all queries, returning `404 Not Found` for unauthorized resource access.
 - **Error Handling**: Centralized error middleware standardizes responses for Mongoose validation, CastErrors, duplicate keys, and JWT errors.
 
@@ -96,7 +111,7 @@ testforge/
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|:---:|---|
-| `POST` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Create test case in project |
+| `POST` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Create test case in project (DSL validated) |
 | `GET` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Get all test cases in project |
 | `GET` | `/api/test-cases/:id` | ✅ Bearer | Get test case by ID |
 | `PATCH` | `/api/test-cases/:id` | ✅ Bearer | Update test case (name, description, dsl) |
@@ -164,4 +179,4 @@ The API will be available at:
 | `@testforge/server` | Express REST API |
 | `@testforge/client` | React frontend (placeholder) |
 | `@testforge/worker` | Playwright worker (placeholder) |
-| `@testforge/dsl-schema` | Shared DSL schema definitions |
+| `@testforge/dsl-schema` | Shared DSL schema definitions and validator |
