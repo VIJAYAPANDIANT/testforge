@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "name": "Login Test",
+  "description": "Basic login flow",
+  "steps": [
+    {
+      "id": "step-1",
+      "type": "navigate",
+      "url": "https://example.com/login"
+    },
+    {
+      "id": "step-2",
+      "type": "fill",
+      "locator": {
+        "strategy": "css",
+        "value": "#email"
+      },
+      "value": "test@example.com"
+    },
+    {
+      "id": "step-3",
+      "type": "fill",
+      "locator": {
+        "strategy": "css",
+        "value": "#password"
+      },
+      "value": "password123"
+    },
+    {
+      "id": "step-4",
+      "type": "click",
+      "locator": {
+        "strategy": "role",
+        "value": "button",
+        "name": "Login"
+      }
+    }
+  ]
+}

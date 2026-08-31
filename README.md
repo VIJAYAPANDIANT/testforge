@@ -20,22 +20,24 @@ Playwright Worker (apps/worker)
 ```
 🚧 Week 2 — Code Generation Engine
 ✅ Day 6 — Formal DSL Schema & Validator completed
+✅ Day 7 — Navigate, Click and Fill code generation completed
 ```
 
-## Test Workflow DSL (Domain-Specific Language)
+## Test Workflow DSL & Code Generation
 
-TestForge supports a formal JSON-based DSL for defining browser end-to-end test workflows. The schema is defined in `@testforge/dsl-schema` and shared across the API, code generator, and frontend.
+TestForge converts visual test workflows defined in JSON DSL into executable Playwright TypeScript code.
+
+- **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
+- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)). Currently converts `navigate`, `click`, and `fill` steps into Playwright TypeScript code with automatic string escaping.
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}`)
 - **`click`**: Click an element using `role`, `text`, or `css` locator
 - **`fill`**: Input text into a form field
-- **`assertVisible`**: Assert an element is visible in the DOM
-- **`assertText`**: Assert an element contains expected text
-- **`wait`**: Pause execution for a specified duration in milliseconds
-- **`screenshot`**: Capture a page screenshot
-
-Full specification document available at [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md).
+- **`assertVisible`**: Assert an element is visible in the DOM (coming Day 8)
+- **`assertText`**: Assert an element contains expected text (coming Day 8)
+- **`wait`**: Pause execution for a specified duration (coming Day 8)
+- **`screenshot`**: Capture a page screenshot (coming Day 8)
 
 ## Repository Structure
 
@@ -55,14 +57,13 @@ testforge/
 │
 ├── docs/
 │   ├── DSL_SPEC.md          # Complete TestForge DSL specification v1.0
+│   ├── CODEGEN.md           # Playwright Code Generation Engine documentation
 │   ├── API_TESTING.md       # Complete API testing guide
 │   └── postman/             # Postman collection & environment
 │
 ├── packages/
-│   └── dsl-schema/          # Shared DSL schema & validation engine
-│       ├── src/             # Schema constants and validateTestDsl validator
-│       ├── examples/        # Sample valid and invalid DSL workflows
-│       └── tests/           # Unit test suite for DSL validator
+│   ├── dsl-schema/          # Shared DSL schema & validation engine
+│   └── codegen/             # Playwright TypeScript code generation engine
 │
 ├── .env.example
 ├── .gitignore
@@ -180,3 +181,4 @@ The API will be available at:
 | `@testforge/client` | React frontend (placeholder) |
 | `@testforge/worker` | Playwright worker (placeholder) |
 | `@testforge/dsl-schema` | Shared DSL schema definitions and validator |
+| `@testforge/codegen` | Playwright TypeScript code generation engine |

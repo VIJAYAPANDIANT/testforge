@@ -1,0 +1,17 @@
+{
+  "name": "@testforge/codegen",
+  "version": "1.0.0",
+  "description": "Playwright TypeScript code generation engine for TestForge DSL workflows",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {
+    "@testforge/dsl-schema": "*"
+  },
+  "scripts": {
+    "test": "node --test tests/codegen.test.js"
+  }
+}
