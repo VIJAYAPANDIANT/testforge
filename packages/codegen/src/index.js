@@ -1,24 +1,33 @@
 import { generateNavigate } from './generateNavigate.js';
 import { generateClick } from './generateClick.js';
 import { generateFill } from './generateFill.js';
+import { generateAssertVisible } from './generateAssertVisible.js';
+import { generateAssertText } from './generateAssertText.js';
+import { generateWait } from './generateWait.js';
+import { generateScreenshot } from './generateScreenshot.js';
 import { generateLocator } from './generateLocator.js';
-import { toTsString, formatUrlExpression } from './utils.js';
+import { toTsString, formatUrlExpression, sanitizeScreenshotFilename } from './utils.js';
 
 export {
   generateNavigate,
   generateClick,
   generateFill,
+  generateAssertVisible,
+  generateAssertText,
+  generateWait,
+  generateScreenshot,
   generateLocator,
   toTsString,
   formatUrlExpression,
+  sanitizeScreenshotFilename,
 };
 
 /**
  * Dispatches code generation for a single TestForge DSL step.
- * Day 7 supports: 'navigate', 'click', 'fill'.
+ * Day 8 supports all 7 step types: 'navigate', 'click', 'fill', 'assertVisible', 'assertText', 'wait', 'screenshot'.
  *
  * @param {object} step - DSL step object
- * @returns {string} Generated Playwright TypeScript code line
+ * @returns {string} Generated Playwright TypeScript code string
  */
 export const generateStep = (step) => {
   if (!step || typeof step !== 'object') {
@@ -36,8 +45,16 @@ export const generateStep = (step) => {
       return generateClick(step);
     case 'fill':
       return generateFill(step);
+    case 'assertVisible':
+      return generateAssertVisible(step);
+    case 'assertText':
+      return generateAssertText(step);
+    case 'wait':
+      return generateWait(step);
+    case 'screenshot':
+      return generateScreenshot(step);
     default:
-      throw new Error(`Unsupported step type for Day 7 codegen: ${step.type}`);
+      throw new Error(`Unsupported step type: ${step.type}`);
   }
 };
 

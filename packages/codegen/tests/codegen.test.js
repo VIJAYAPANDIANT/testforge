@@ -7,15 +7,20 @@ import {
   generateNavigate,
   generateClick,
   generateFill,
+  generateAssertVisible,
+  generateAssertText,
+  generateWait,
+  generateScreenshot,
   generateLocator,
   generateStep,
   generateSteps,
+  sanitizeScreenshotFilename,
 } from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-describe('Playwright Codegen Engine (Day 7)', () => {
+describe('Playwright Codegen Engine (Day 8 — All 7 Steps)', () => {
   // ─── NAVIGATE ───────────────────────────────────────────────────────────────
 
   describe('generateNavigate', () => {
@@ -187,35 +192,187 @@ describe('Playwright Codegen Engine (Day 7)', () => {
     });
   });
 
-  // ─── DISPATCHER & BATCH ─────────────────────────────────────────────────────
+  // ─── ASSERT VISIBLE ─────────────────────────────────────────────────────────
 
-  describe('generateStep and generateSteps', () => {
-    test('generateStep dispatches correctly', () => {
-      const navCode = generateStep({ id: '1', type: 'navigate', url: 'https://a.com' });
-      assert.equal(navCode, 'await page.goto("https://a.com");');
-
-      const clickCode = generateStep({ id: '2', type: 'click', locator: { strategy: 'css', value: '#btn' } });
-      assert.equal(clickCode, 'await page.locator("#btn").click();');
-
-      const fillCode = generateStep({ id: '3', type: 'fill', locator: { strategy: 'css', value: '#input' }, value: 'abc' });
-      assert.equal(fillCode, 'await page.locator("#input").fill("abc");');
+  describe('generateAssertVisible', () => {
+    test('AssertVisible with Role locator', () => {
+      const step = {
+        id: 'step-4',
+        type: 'assertVisible',
+        locator: { strategy: 'role', value: 'heading', name: 'Welcome' },
+      };
+      const code = generateAssertVisible(step);
+      assert.equal(code, 'await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();');
     });
 
-    test('Throws error for Day 7 unsupported step type (e.g. assertVisible)', () => {
+    test('AssertVisible with Text locator', () => {
+      const step = {
+        id: 'step-4',
+        type: 'assertVisible',
+        locator: { strategy: 'text', value: 'Dashboard' },
+      };
+      const code = generateAssertVisible(step);
+      assert.equal(code, 'await expect(page.getByText("Dashboard")).toBeVisible();');
+    });
+
+    test('AssertVisible with CSS locator', () => {
+      const step = {
+        id: 'step-4',
+        type: 'assertVisible',
+        locator: { strategy: 'css', value: '.welcome-banner' },
+      };
+      const code = generateAssertVisible(step);
+      assert.equal(code, 'await expect(page.locator(".welcome-banner")).toBeVisible();');
+    });
+
+    test('Throws error when locator is missing', () => {
       assert.throws(
-        () => generateStep({ id: '1', type: 'assertVisible', locator: { strategy: 'css', value: '#btn' } }),
-        /Unsupported step type for Day 7 codegen: assertVisible/
+        () => generateAssertVisible({ id: 'step-4', type: 'assertVisible' }),
+        /Locator is required for assertVisible step/
+      );
+    });
+  });
+
+  // ─── ASSERT TEXT ────────────────────────────────────────────────────────────
+
+  describe('generateAssertText', () => {
+    test('AssertText with CSS locator', () => {
+      const step = {
+        id: 'step-5',
+        type: 'assertText',
+        locator: { strategy: 'css', value: '.welcome-message' },
+        expectedText: 'Welcome',
+      };
+      const code = generateAssertText(step);
+      assert.equal(code, 'await expect(page.locator(".welcome-message")).toHaveText("Welcome");');
+    });
+
+    test('AssertText with Role locator', () => {
+      const step = {
+        id: 'step-5',
+        type: 'assertText',
+        locator: { strategy: 'role', value: 'heading', name: 'Dashboard' },
+        expectedText: 'Dashboard',
+      };
+      const code = generateAssertText(step);
+      assert.equal(
+        code,
+        'await expect(page.getByRole("heading", { name: "Dashboard" })).toHaveText("Dashboard");'
       );
     });
 
-    test('generateSteps converts sample login DSL to expected Playwright output', () => {
-      const samplePath = path.join(__dirname, '../examples/sample-login.json');
-      const sampleJson = JSON.parse(fs.readFileSync(samplePath, 'utf8'));
+    test('AssertText with special characters and multiline text', () => {
+      const step = {
+        id: 'step-5',
+        type: 'assertText',
+        locator: { strategy: 'css', value: '#msg' },
+        expectedText: 'Hello "World"\nLine 2',
+      };
+      const code = generateAssertText(step);
+      assert.equal(
+        code,
+        'await expect(page.locator("#msg")).toHaveText("Hello \\"World\\"\\nLine 2");'
+      );
+    });
 
-      const expectedPath = path.join(__dirname, '../examples/expected-login-output.ts');
+    test('Throws error when expectedText is missing', () => {
+      assert.throws(
+        () => generateAssertText({ id: 'step-5', type: 'assertText', locator: { strategy: 'css', value: '#msg' } }),
+        /expectedText is required for assertText step/
+      );
+    });
+  });
+
+  // ─── WAIT ───────────────────────────────────────────────────────────────────
+
+  describe('generateWait', () => {
+    test('Wait for 100 ms', () => {
+      const code = generateWait({ id: 'step-6', type: 'wait', duration: 100 });
+      assert.equal(code, 'await page.waitForTimeout(100);');
+    });
+
+    test('Wait for 1000 ms', () => {
+      const code = generateWait({ id: 'step-6', type: 'wait', duration: 1000 });
+      assert.equal(code, 'await page.waitForTimeout(1000);');
+    });
+
+    test('Wait for 120000 ms', () => {
+      const code = generateWait({ id: 'step-6', type: 'wait', duration: 120000 });
+      assert.equal(code, 'await page.waitForTimeout(120000);');
+    });
+
+    test('Throws error when duration is missing', () => {
+      assert.throws(
+        () => generateWait({ id: 'step-6', type: 'wait' }),
+        /duration is required for wait step/
+      );
+    });
+
+    test('Throws error when duration is invalid or non-positive', () => {
+      assert.throws(
+        () => generateWait({ id: 'step-6', type: 'wait', duration: -500 }),
+        /Invalid wait duration/
+      );
+    });
+  });
+
+  // ─── SCREENSHOT ─────────────────────────────────────────────────────────────
+
+  describe('generateScreenshot & sanitizeScreenshotFilename', () => {
+    test('Sanitizes filenames and path traversal cleanly', () => {
+      assert.equal(sanitizeScreenshotFilename('homepage', 'step-7'), 'homepage.png');
+      assert.equal(sanitizeScreenshotFilename('login success', 'step-7'), 'login-success.png');
+      assert.equal(sanitizeScreenshotFilename('../../secret', 'step-7'), 'secret.png');
+      assert.equal(sanitizeScreenshotFilename(undefined, 'step-7'), 'step-7.png');
+    });
+
+    test('Screenshot with explicit name and fullPage: true', () => {
+      const step = { id: 'step-7', type: 'screenshot', name: 'homepage', fullPage: true };
+      const code = generateScreenshot(step);
+      assert.equal(code, 'await page.screenshot({\n  path: "homepage.png",\n  fullPage: true\n});');
+    });
+
+    test('Screenshot with fullPage: false', () => {
+      const step = { id: 'step-7', type: 'screenshot', name: 'homepage', fullPage: false };
+      const code = generateScreenshot(step);
+      assert.equal(code, 'await page.screenshot({\n  path: "homepage.png",\n  fullPage: false\n});');
+    });
+
+    test('Screenshot without name uses step ID fallback', () => {
+      const step = { id: 'step-7', type: 'screenshot' };
+      const code = generateScreenshot(step);
+      assert.equal(code, 'await page.screenshot({\n  path: "step-7.png",\n  fullPage: false\n});');
+    });
+  });
+
+  // ─── DISPATCHER & BATCH ALL 7 STEPS ─────────────────────────────────────────
+
+  describe('generateStep and generateSteps for all 7 step types', () => {
+    test('generateStep dispatches all 7 step types correctly', () => {
+      assert.equal(generateStep({ id: '1', type: 'navigate', url: 'https://a.com' }), 'await page.goto("https://a.com");');
+      assert.equal(generateStep({ id: '2', type: 'click', locator: { strategy: 'css', value: '#btn' } }), 'await page.locator("#btn").click();');
+      assert.equal(generateStep({ id: '3', type: 'fill', locator: { strategy: 'css', value: '#in' }, value: 'v' }), 'await page.locator("#in").fill("v");');
+      assert.equal(generateStep({ id: '4', type: 'assertVisible', locator: { strategy: 'css', value: '#v' } }), 'await expect(page.locator("#v")).toBeVisible();');
+      assert.equal(generateStep({ id: '5', type: 'assertText', locator: { strategy: 'css', value: '#t' }, expectedText: 'T' }), 'await expect(page.locator("#t")).toHaveText("T");');
+      assert.equal(generateStep({ id: '6', type: 'wait', duration: 500 }), 'await page.waitForTimeout(500);');
+      assert.equal(generateStep({ id: '7', type: 'screenshot', name: 'sc' }), 'await page.screenshot({\n  path: "sc.png",\n  fullPage: false\n});');
+    });
+
+    test('Throws error for unsupported step type', () => {
+      assert.throws(
+        () => generateStep({ id: '1', type: 'hover', locator: { strategy: 'css', value: '#btn' } }),
+        /Unsupported step type: hover/
+      );
+    });
+
+    test('generateSteps converts full 7-step sample DSL to expected Playwright output', () => {
+      const fullJsonPath = path.join(__dirname, '../examples/full-test.json');
+      const fullJson = JSON.parse(fs.readFileSync(fullJsonPath, 'utf8'));
+
+      const expectedPath = path.join(__dirname, '../examples/full-test-output.ts');
       const expectedOutput = fs.readFileSync(expectedPath, 'utf8').trim();
 
-      const generatedCode = generateSteps(sampleJson).trim();
+      const generatedCode = generateSteps(fullJson).trim();
       assert.equal(generatedCode, expectedOutput);
     });
   });

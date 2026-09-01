@@ -21,6 +21,7 @@ Playwright Worker (apps/worker)
 🚧 Week 2 — Code Generation Engine
 ✅ Day 6 — Formal DSL Schema & Validator completed
 ✅ Day 7 — Navigate, Click and Fill code generation completed
+✅ Day 8 — AssertVisible, AssertText, Wait and Screenshot code generation completed (All 7 steps ready)
 ```
 
 ## Test Workflow DSL & Code Generation
@@ -28,16 +29,16 @@ Playwright Worker (apps/worker)
 TestForge converts visual test workflows defined in JSON DSL into executable Playwright TypeScript code.
 
 - **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
-- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)). Currently converts `navigate`, `click`, and `fill` steps into Playwright TypeScript code with automatic string escaping.
+- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)). As of Day 8, converts all 7 DSL step types into Playwright TypeScript code with automatic string escaping and safe filename sanitization.
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}`)
 - **`click`**: Click an element using `role`, `text`, or `css` locator
 - **`fill`**: Input text into a form field
-- **`assertVisible`**: Assert an element is visible in the DOM (coming Day 8)
-- **`assertText`**: Assert an element contains expected text (coming Day 8)
-- **`wait`**: Pause execution for a specified duration (coming Day 8)
-- **`screenshot`**: Capture a page screenshot (coming Day 8)
+- **`assertVisible`**: Assert an element is visible in the DOM
+- **`assertText`**: Assert an element contains expected text
+- **`wait`**: Pause execution for a specified duration in milliseconds
+- **`screenshot`**: Capture a page screenshot with optional fullPage flag and safe path sanitization
 
 ## Repository Structure
 

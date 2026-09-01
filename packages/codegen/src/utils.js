@@ -38,3 +38,51 @@ export const formatUrlExpression = (url) => {
 
   return toTsString(url);
 };
+
+/**
+ * Deterministically sanitizes a screenshot name or step ID to produce a safe filename.
+ * Prevents path traversal (e.g. ../../secret), removes illegal characters, replaces spaces with hyphens,
+ * and ensures a .png extension is appended.
+ *
+ * @param {string} [name] - Optional screenshot name from step
+ * @param {string} [stepId] - Step ID used as fallback if name is omitted
+ * @returns {string} Safe PNG filename (e.g. "homepage.png")
+ */
+export const sanitizeScreenshotFilename = (name, stepId) => {
+  let baseName = '';
+
+  if (typeof name === 'string' && name.trim().length > 0) {
+    baseName = name.trim();
+  } else if (typeof stepId === 'string' && stepId.trim().length > 0) {
+    baseName = stepId.trim();
+  } else {
+    baseName = 'screenshot';
+  }
+
+  // Remove path traversal and directory separators (../, .\, /, \)
+  baseName = baseName.replace(/(\.\.[\/\\])+/g, '');
+  baseName = baseName.replace(/[\/\\]/g, '-');
+
+  // Remove illegal characters for Windows/Linux filenames: ? % * : | " < >
+  baseName = baseName.replace(/[?%*:|"<>]/g, '');
+
+  // Replace spaces with hyphens
+  baseName = baseName.replace(/\s+/g, '-');
+
+  // Strip multiple consecutive hyphens
+  baseName = baseName.replace(/-+/g, '-');
+
+  // Trim leading/trailing hyphens or dots
+  baseName = baseName.replace(/^[-.]+|[-.]+$/g, '');
+
+  if (!baseName) {
+    baseName = 'screenshot';
+  }
+
+  // Append .png extension if not already present
+  if (!baseName.toLowerCase().endsWith('.png')) {
+    baseName += '.png';
+  }
+
+  return baseName;
+};

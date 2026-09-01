@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "name": "Complete TestForge Demo",
+  "description": "Demonstrates all supported TestForge steps",
+  "steps": [
+    {
+      "id": "step-1",
+      "type": "navigate",
+      "url": "https://example.com"
+    },
+    {
+      "id": "step-2",
+      "type": "click",
+      "locator": {
+        "strategy": "role",
+        "value": "link",
+        "name": "More information"
+      }
+    },
+    {
+      "id": "step-3",
+      "type": "fill",
+      "locator": {
+        "strategy": "css",
+        "value": "#search"
+      },
+      "value": "TestForge"
+    },
+    {
+      "id": "step-4",
+      "type": "assertVisible",
+      "locator": {
+        "strategy": "text",
+        "value": "Example Domain"
+      }
+    },
+    {
+      "id": "step-5",
+      "type": "assertText",
+      "locator": {
+        "strategy": "css",
+        "value": "h1"
+      },
+      "expectedText": "Example Domain"
+    },
+    {
+      "id": "step-6",
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "id": "step-7",
+      "type": "screenshot",
+      "name": "complete-test",
+      "fullPage": true
+    }
+  ]
+}
