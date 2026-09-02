@@ -11,7 +11,11 @@
   "dependencies": {
     "@testforge/dsl-schema": "*"
   },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  },
   "scripts": {
-    "test": "node --test tests/codegen.test.js"
+    "test": "node --test tests/*.test.js",
+    "codegen": "node src/cli.js"
   }
 }

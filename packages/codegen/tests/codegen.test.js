@@ -39,7 +39,7 @@ describe('Playwright Codegen Engine (Day 8 — All 7 Steps)', () => {
     test('Generates template literal for {{BASE_URL}} placeholder', () => {
       const step = { id: 'step-1', type: 'navigate', url: '{{BASE_URL}}/login' };
       const code = generateNavigate(step);
-      assert.equal(code, 'await page.goto(`${BASE_URL}/login`);');
+      assert.equal(code, 'await page.goto(`${process.env.BASE_URL}/login`);');
     });
 
     test('Throws error for missing or empty URL', () => {

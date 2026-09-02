@@ -6,6 +6,7 @@ import { generateAssertText } from './generateAssertText.js';
 import { generateWait } from './generateWait.js';
 import { generateScreenshot } from './generateScreenshot.js';
 import { generateLocator } from './generateLocator.js';
+import { dslToPlaywrightScript, writePlaywrightTestFile } from './dslToPlaywrightScript.js';
 import { toTsString, formatUrlExpression, sanitizeScreenshotFilename } from './utils.js';
 
 export {
@@ -17,6 +18,8 @@ export {
   generateWait,
   generateScreenshot,
   generateLocator,
+  dslToPlaywrightScript,
+  writePlaywrightTestFile,
   toTsString,
   formatUrlExpression,
   sanitizeScreenshotFilename,
@@ -24,7 +27,7 @@ export {
 
 /**
  * Dispatches code generation for a single TestForge DSL step.
- * Day 8 supports all 7 step types: 'navigate', 'click', 'fill', 'assertVisible', 'assertText', 'wait', 'screenshot'.
+ * Supports all 7 step types: 'navigate', 'click', 'fill', 'assertVisible', 'assertText', 'wait', 'screenshot'.
  *
  * @param {object} step - DSL step object
  * @returns {string} Generated Playwright TypeScript code string

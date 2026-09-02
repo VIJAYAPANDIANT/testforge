@@ -1,4 +1,4 @@
-import { Locator, TestStep } from '@testforge/dsl-schema';
+import { Locator, TestDsl, TestStep } from '@testforge/dsl-schema';
 
 export declare function toTsString(val: string): string;
 export declare function formatUrlExpression(url: string): string;
@@ -15,3 +15,6 @@ export declare function generateScreenshot(step: TestStep): string;
 
 export declare function generateStep(step: TestStep): string;
 export declare function generateSteps(input: TestStep[] | { steps: TestStep[] }): string;
+
+export declare function dslToPlaywrightScript(dsl: TestDsl | any): string;
+export declare function writePlaywrightTestFile(dsl: TestDsl | any, outputPath: string): string;

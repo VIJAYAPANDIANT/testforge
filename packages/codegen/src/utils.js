@@ -16,7 +16,7 @@ export const toTsString = (val) => {
 /**
  * Formats a URL string for Playwright page.goto().
  * If the URL contains environment placeholders like {{BASE_URL}},
- * it converts them to template literal placeholders like `${BASE_URL}/login`.
+ * it converts them to TypeScript process.env expressions like `${process.env.BASE_URL}/login`.
  * Otherwise, it returns a standard escaped double-quoted string.
  *
  * @param {string} url - Input URL string
@@ -29,8 +29,8 @@ export const formatUrlExpression = (url) => {
 
   // Check for {{VARIABLE}} placeholders
   if (url.includes('{{') && url.includes('}}')) {
-    // Replace {{VAR_NAME}} with ${VAR_NAME}
-    const templateContent = url.replace(/\{\{([^}]+)\}\}/g, '${$1}');
+    // Replace {{VAR_NAME}} with ${process.env.VAR_NAME}
+    const templateContent = url.replace(/\{\{([^}]+)\}\}/g, '${process.env.$1}');
     // Escape any raw backticks in the template content
     const safeContent = templateContent.replace(/`/g, '\\`');
     return `\`${safeContent}\``;

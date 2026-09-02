@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "name": "Complete TestForge Demo",
-  "description": "Demonstrates all supported TestForge steps",
+  "name": "TestForge Complete Demo",
+  "description": "Demonstrates all TestForge step types",
   "steps": [
     {
       "id": "step-1",

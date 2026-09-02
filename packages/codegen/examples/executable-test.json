@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "name": "Executable Example Domain Test",
+  "description": "Runnable Playwright test fixture targeting example.com",
+  "steps": [
+    {
+      "id": "step-1",
+      "type": "navigate",
+      "url": "https://example.com"
+    },
+    {
+      "id": "step-2",
+      "type": "assertVisible",
+      "locator": {
+        "strategy": "role",
+        "value": "heading",
+        "name": "Example Domain"
+      }
+    },
+    {
+      "id": "step-3",
+      "type": "assertText",
+      "locator": {
+        "strategy": "css",
+        "value": "h1"
+      },
+      "expectedText": "Example Domain"
+    },
+    {
+      "id": "step-4",
+      "type": "wait",
+      "duration": 500
+    }
+  ]
+}
