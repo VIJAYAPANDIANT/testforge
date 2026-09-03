@@ -30,17 +30,44 @@ const validateLocator = (locator, path, errors, isFallback = false, primaryLocat
     });
   }
 
-  // Value validation
-  if (typeof locator.value !== 'string' || locator.value.trim().length === 0) {
-    errors.push({
-      path: `${path}.value`,
-      message: 'Locator value is required and must not be empty',
-    });
-  } else if (locator.value.trim().length > 500) {
-    errors.push({
-      path: `${path}.value`,
-      message: 'Locator value must not exceed 500 characters',
-    });
+  // Strategy-specific value/role validation
+  if (locator.strategy === 'role') {
+    const roleVal = locator.role || locator.value;
+    if (typeof roleVal !== 'string' || roleVal.trim().length === 0) {
+      errors.push({
+        path: locator.role !== undefined ? `${path}.role` : `${path}.value`,
+        message: 'Invalid role locator: "role" or "value" is required',
+      });
+    } else if (roleVal.trim().length > 500) {
+      errors.push({
+        path: locator.role !== undefined ? `${path}.role` : `${path}.value`,
+        message: 'Locator role must not exceed 500 characters',
+      });
+    }
+  } else if (locator.strategy === 'text') {
+    if (typeof locator.value !== 'string' || locator.value.trim().length === 0) {
+      errors.push({
+        path: `${path}.value`,
+        message: 'Invalid text locator: "value" is required',
+      });
+    } else if (locator.value.trim().length > 500) {
+      errors.push({
+        path: `${path}.value`,
+        message: 'Locator value must not exceed 500 characters',
+      });
+    }
+  } else if (locator.strategy === 'css') {
+    if (typeof locator.value !== 'string' || locator.value.trim().length === 0) {
+      errors.push({
+        path: `${path}.value`,
+        message: 'Invalid css locator: "value" is required',
+      });
+    } else if (locator.value.trim().length > 500) {
+      errors.push({
+        path: `${path}.value`,
+        message: 'Locator value must not exceed 500 characters',
+      });
+    }
   }
 
   // Name validation (optional)
@@ -58,11 +85,22 @@ const validateLocator = (locator, path, errors, isFallback = false, primaryLocat
     }
   }
 
+  // Check nested fallback if this locator itself is already a fallback
+  if (isFallback && (locator.fallback || locator.fallbackLocator)) {
+    errors.push({
+      path: locator.fallback ? `${path}.fallback` : `${path}.fallbackLocator`,
+      message: 'Invalid fallback locator: nested fallbacks are not supported',
+    });
+  }
+
   // Fallback identical check
   if (isFallback && primaryLocator && isObject(primaryLocator)) {
+    const primaryRoleVal = primaryLocator.role || primaryLocator.value;
+    const currentRoleVal = locator.role || locator.value;
+
     const isIdentical =
       locator.strategy === primaryLocator.strategy &&
-      locator.value === primaryLocator.value &&
+      currentRoleVal === primaryRoleVal &&
       (locator.name ?? '') === (primaryLocator.name ?? '');
 
     if (isIdentical) {
@@ -72,10 +110,19 @@ const validateLocator = (locator, path, errors, isFallback = false, primaryLocat
       });
     }
   }
+
+  // Validate inline fallback if present on non-fallback locator
+  if (!isFallback) {
+    const fallbackObj = locator.fallback || locator.fallbackLocator;
+    if (fallbackObj) {
+      const fallbackPath = locator.fallback ? `${path}.fallback` : `${path}.fallbackLocator`;
+      validateLocator(fallbackObj, fallbackPath, errors, true, locator);
+    }
+  }
 };
 
 /**
- * Validates a TestForge DSL JSON object against the formal Week 2 specification.
+ * Validates a TestForge DSL JSON object against the formal specification.
  *
  * @param {any} dsl - The DSL payload to validate.
  * @returns {{ success: boolean, data?: object, errors?: Array<{ path: string, message: string }> }}
@@ -322,14 +369,17 @@ export const validateTestDsl = (dsl) => {
           validateLocator(step.locator, `${stepPath}.locator`, errors);
         }
 
-        if (step.expectedText === undefined || step.expectedText === null || typeof step.expectedText !== 'string') {
+        const textVal = step.expectedText !== undefined ? step.expectedText : step.value;
+        const errPath = step.expectedText !== undefined ? `${stepPath}.expectedText` : (step.value !== undefined ? `${stepPath}.value` : `${stepPath}.expectedText`);
+
+        if (textVal === undefined || textVal === null || typeof textVal !== 'string') {
           errors.push({
-            path: `${stepPath}.expectedText`,
+            path: errPath,
             message: 'Expected text is required and must be a string',
           });
-        } else if (step.expectedText.length > 10000) {
+        } else if (textVal.length > 10000) {
           errors.push({
-            path: `${stepPath}.expectedText`,
+            path: errPath,
             message: 'Expected text must not exceed 10000 characters',
           });
         }
@@ -341,15 +391,18 @@ export const validateTestDsl = (dsl) => {
       }
 
       case 'wait': {
+        const waitVal = step.duration !== undefined ? step.duration : step.milliseconds;
+        const errPath = step.duration !== undefined ? `${stepPath}.duration` : (step.milliseconds !== undefined ? `${stepPath}.milliseconds` : `${stepPath}.duration`);
+
         if (
-          step.duration === undefined ||
-          typeof step.duration !== 'number' ||
-          !Number.isInteger(step.duration) ||
-          step.duration < 100 ||
-          step.duration > 120000
+          waitVal === undefined ||
+          typeof waitVal !== 'number' ||
+          !Number.isInteger(waitVal) ||
+          waitVal < 100 ||
+          waitVal > 120000
         ) {
           errors.push({
-            path: `${stepPath}.duration`,
+            path: errPath,
             message: 'Wait duration is required and must be an integer between 100 and 120000 milliseconds',
           });
         }

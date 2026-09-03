@@ -1,7 +1,7 @@
 /**
  * Generates Playwright TypeScript code for a Wait step.
  *
- * @param {{ id: string, type: 'wait', duration: number }} step
+ * @param {{ id: string, type: 'wait', duration?: number, milliseconds?: number }} step
  * @returns {string} Playwright TypeScript code string
  */
 export const generateWait = (step) => {
@@ -13,17 +13,19 @@ export const generateWait = (step) => {
     throw new Error(`Expected wait step, received '${step.type}'`);
   }
 
-  if (step.duration === undefined || step.duration === null) {
+  const durationVal = step.duration !== undefined ? step.duration : step.milliseconds;
+
+  if (durationVal === undefined || durationVal === null) {
     throw new Error('duration is required for wait step');
   }
 
   if (
-    typeof step.duration !== 'number' ||
-    !Number.isFinite(step.duration) ||
-    step.duration <= 0
+    typeof durationVal !== 'number' ||
+    !Number.isFinite(durationVal) ||
+    durationVal <= 0
   ) {
     throw new Error('Invalid wait duration');
   }
 
-  return `await page.waitForTimeout(${step.duration});`;
+  return `await page.waitForTimeout(${durationVal});`;
 };

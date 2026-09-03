@@ -4,7 +4,7 @@ import { toTsString } from './utils.js';
 /**
  * Generates Playwright TypeScript assertion code for an AssertText step.
  *
- * @param {{ id: string, type: 'assertText', locator: object, expectedText: string }} step
+ * @param {{ id: string, type: 'assertText', locator: object, expectedText?: string, value?: string, fallbackLocator?: object }} step
  * @returns {string} Playwright TypeScript code string
  */
 export const generateAssertText = (step) => {
@@ -20,16 +20,19 @@ export const generateAssertText = (step) => {
     throw new Error('Locator is required for assertText step');
   }
 
-  if (
-    step.expectedText === undefined ||
-    step.expectedText === null ||
-    typeof step.expectedText !== 'string'
-  ) {
+  const textVal = step.expectedText !== undefined ? step.expectedText : step.value;
+
+  if (textVal === undefined || textVal === null || typeof textVal !== 'string') {
     throw new Error('expectedText is required for assertText step');
   }
 
-  const locatorCode = generateLocator(step.locator);
-  const expectedTextCode = toTsString(step.expectedText);
+  const locatorObj =
+    step.fallbackLocator && !step.locator.fallback && !step.locator.fallbackLocator
+      ? { ...step.locator, fallback: step.fallbackLocator }
+      : step.locator;
+
+  const locatorCode = generateLocator(locatorObj);
+  const expectedTextCode = toTsString(textVal);
 
   return `await expect(${locatorCode}).toHaveText(${expectedTextCode});`;
 };

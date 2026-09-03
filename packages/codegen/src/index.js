@@ -5,7 +5,7 @@ import { generateAssertVisible } from './generateAssertVisible.js';
 import { generateAssertText } from './generateAssertText.js';
 import { generateWait } from './generateWait.js';
 import { generateScreenshot } from './generateScreenshot.js';
-import { generateLocator } from './generateLocator.js';
+import { generateLocator, generateSingleLocator } from './generateLocator.js';
 import { dslToPlaywrightScript, writePlaywrightTestFile } from './dslToPlaywrightScript.js';
 import { toTsString, formatUrlExpression, sanitizeScreenshotFilename } from './utils.js';
 
@@ -18,6 +18,7 @@ export {
   generateWait,
   generateScreenshot,
   generateLocator,
+  generateSingleLocator,
   dslToPlaywrightScript,
   writePlaywrightTestFile,
   toTsString,

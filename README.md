@@ -23,6 +23,7 @@ Playwright Worker (apps/worker)
 ✅ Day 7 — Navigate, Click and Fill code generation completed
 ✅ Day 8 — AssertVisible, AssertText, Wait and Screenshot code generation completed
 ✅ Day 9 — Complete DSL → Playwright .spec.ts generation completed
+✅ Day 10 — Locator Strategies, Validation & Fallback Locators completed
 ```
 
 ## Test Workflow DSL & Code Generation Engine
@@ -30,11 +31,11 @@ Playwright Worker (apps/worker)
 TestForge converts visual test workflows defined in JSON DSL into complete, runnable Playwright TypeScript (`.spec.ts`) test files.
 
 - **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
-- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)). As of Day 9, converts full DSL workflows into complete ES module `.spec.ts` test files ready for `npx playwright test`.
+- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)). As of Day 10, features locator strategies (`role`, `text`, `css`), fallback locator generation, developer-friendly validation, and converts full DSL workflows into complete ES module `.spec.ts` test files ready for `npx playwright test`.
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}` mapped to `process.env.BASE_URL`)
-- **`click`**: Click an element using `role`, `text`, or `css` locator
+- **`click`**: Click an element using `role`, `text`, or `css` locator (supports optional `fallback` locator)
 - **`fill`**: Input text into a form field
 - **`assertVisible`**: Assert an element is visible in the DOM
 - **`assertText`**: Assert an element contains expected text
@@ -49,6 +50,7 @@ Supported step types:
 | Shared DSL Schema & Validation | ✅ Completed (Week 2 Day 6) |
 | Playwright Step Code Generation (All 7 Steps) | ✅ Completed (Week 2 Days 7-8) |
 | Full `.spec.ts` Test File Code Generator | ✅ Completed (Week 2 Day 9) |
+| Locator Strategies, Validation & Fallback Locators | ✅ Completed (Week 2 Day 10) |
 | Playwright Browser Worker Execution Engine | ⏳ Coming Week 3 (`apps/worker`) |
 | React Visual Test Builder UI | ⏳ Coming Week 3 (`apps/client`) |
 
@@ -77,9 +79,9 @@ testforge/
 ├── packages/
 │   ├── dsl-schema/          # Shared DSL schema & validation engine
 │   └── codegen/             # Playwright TypeScript code generation engine
-│       ├── src/             # Step generators, dslToPlaywrightScript, CLI
+│       ├── src/             # Step generators, locator generators, dslToPlaywrightScript, CLI
 │       ├── examples/        # DSL fixtures and generated .spec.ts files
-│       └── tests/           # Unit test suite for code generator
+│       └── tests/           # Unit test suite for code generator & locators
 │
 ├── .env.example
 ├── .gitignore

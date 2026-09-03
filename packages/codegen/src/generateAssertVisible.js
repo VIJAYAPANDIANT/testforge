@@ -3,7 +3,7 @@ import { generateLocator } from './generateLocator.js';
 /**
  * Generates Playwright TypeScript assertion code for an AssertVisible step.
  *
- * @param {{ id: string, type: 'assertVisible', locator: object }} step
+ * @param {{ id: string, type: 'assertVisible', locator: object, fallbackLocator?: object }} step
  * @returns {string} Playwright TypeScript code string
  */
 export const generateAssertVisible = (step) => {
@@ -19,6 +19,11 @@ export const generateAssertVisible = (step) => {
     throw new Error('Locator is required for assertVisible step');
   }
 
-  const locatorCode = generateLocator(step.locator);
+  const locatorObj =
+    step.fallbackLocator && !step.locator.fallback && !step.locator.fallbackLocator
+      ? { ...step.locator, fallback: step.fallbackLocator }
+      : step.locator;
+
+  const locatorCode = generateLocator(locatorObj);
   return `await expect(${locatorCode}).toBeVisible();`;
 };

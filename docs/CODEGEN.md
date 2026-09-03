@@ -1,8 +1,8 @@
-# TestForge — Playwright Code Generation Engine (Day 9)
+# TestForge — Playwright Code Generation Engine (Day 10)
 
 The **TestForge Code Generation Engine** (`@testforge/codegen`) converts TestForge DSL JSON test workflows into clean, executable Playwright TypeScript (`.spec.ts`) test files.
 
-As of Day 9, the generator converts complete DSL workflows containing all 7 step types into valid, runnable ES module Playwright test suites.
+As of Day 10, the engine features enhanced **locator generation, validation, developer-friendly error handling, and fallback locator support**.
 
 ---
 
@@ -20,7 +20,77 @@ As of Day 9, the generator converts complete DSL workflows containing all 7 step
 
 ---
 
-## 2. Complete Playwright Test Generation (`dslToPlaywrightScript`)
+## 2. Locator Conversion (`generateLocator`)
+
+The generator translates TestForge locator DSL objects into canonical Playwright locator expressions:
+
+### 2.1 Role Locator (`role`)
+- **DSL (using `role`)**: `{ "strategy": "role", "role": "button", "name": "Login" }`
+- **DSL (using `value`)**: `{ "strategy": "role", "value": "button", "name": "Login" }`
+- **Output**: `page.getByRole("button", { name: "Login" })`
+- **DSL (no name)**: `{ "strategy": "role", "role": "textbox" }`
+- **Output**: `page.getByRole("textbox")`
+
+### 2.2 Text Locator (`text`)
+- **DSL**: `{ "strategy": "text", "value": "Welcome Back" }`
+- **Output**: `page.getByText("Welcome Back")`
+
+### 2.3 CSS Locator (`css`)
+- **DSL**: `{ "strategy": "css", "value": "#login-button" }`
+- **Output**: `page.locator("#login-button")`
+
+---
+
+## 3. Fallback Locators (`fallback`)
+
+TestForge supports optional fallback locators when a primary locator might fail:
+
+```json
+{
+  "strategy": "role",
+  "role": "button",
+  "name": "Login",
+  "fallback": {
+    "strategy": "css",
+    "value": "#login-button"
+  }
+}
+```
+
+### Generated Fallback TypeScript Pattern
+```typescript
+(await (async () => {
+  const primary = page.getByRole("button", { name: "Login" });
+  if (await primary.count() > 0) {
+    return primary;
+  }
+  return page.locator("#login-button");
+})())
+```
+
+### Fallback Constraints & Rules
+- Fallback is optional.
+- Fallback must itself be a valid locator strategy (`role`, `text`, or `css`).
+- Only **1 level** of fallback is supported. Nested fallbacks (`fallback.fallback`) are explicitly rejected.
+- Fallback locator must not be identical to the primary locator.
+
+---
+
+## 4. Developer-Friendly Error Handling & Validation
+
+Invalid locator objects throw clear, actionable errors during code generation:
+
+- **Missing Strategy**: `Locator strategy is required`
+- **Unsupported Strategy**: `Unsupported locator strategy: xpath`
+- **Missing Role**: `Invalid role locator: "role" or "value" is required`
+- **Missing Text Value**: `Invalid text locator: "value" is required`
+- **Missing CSS Value**: `Invalid css locator: "value" is required`
+- **Nested Fallback**: `Invalid fallback locator: nested fallbacks are not supported`
+- **Identical Fallback**: `Invalid fallback locator: Fallback locator must not be identical to the primary locator`
+
+---
+
+## 5. Complete Playwright Test Generation (`dslToPlaywrightScript`)
 
 `dslToPlaywrightScript(dsl)` accepts a TestForge DSL JSON object, validates it against the shared `@testforge/dsl-schema`, and wraps the generated step statements inside a full ES module Playwright test wrapper:
 
@@ -36,7 +106,7 @@ test("Login Test", async ({ page }) => {
 
 ---
 
-## 3. Environment Variable Placeholders (`{{BASE_URL}}`)
+## 6. Environment Variable Placeholders (`{{BASE_URL}}`)
 
 URLs containing environment variable placeholders (such as `{{BASE_URL}}/login`) are automatically translated into TypeScript `process.env` template literals:
 
@@ -45,7 +115,7 @@ URLs containing environment variable placeholders (such as `{{BASE_URL}}/login`)
 
 ---
 
-## 4. File Writer & CLI Tooling
+## 7. File Writer & CLI Tooling
 
 ### File Writer API (`writePlaywrightTestFile`)
 
@@ -55,157 +125,79 @@ import { writePlaywrightTestFile } from '@testforge/codegen';
 const outputPath = writePlaywrightTestFile(dsl, './examples/generated/full-test.spec.ts');
 ```
 
-This helper validates the DSL payload, creates any required target directories, and writes the formatted `.spec.ts` source code to disk.
-
 ### Command Line Interface (CLI)
-
-Generate Playwright test files directly from JSON DSL files:
 
 ```bash
 node packages/codegen/src/cli.js packages/codegen/examples/full-test.json packages/codegen/examples/generated/full-test.spec.ts
 ```
 
-Output:
-```text
-TestForge code generation successful.
-
-Generated:
-packages/codegen/examples/generated/full-test.spec.ts
-```
-
 ---
 
-## 5. Locator Conversion (`generateLocator`)
-
-The generator translates TestForge locator DSL objects into canonical Playwright locator expressions:
-
-### 5.1 Role Locator (`role`)
-- **DSL**: `{ "strategy": "role", "value": "button", "name": "Login" }`
-- **Output**: `page.getByRole("button", { name: "Login" })`
-- **DSL (no name)**: `{ "strategy": "role", "value": "button" }`
-- **Output**: `page.getByRole("button")`
-
-### 5.2 Text Locator (`text`)
-- **DSL**: `{ "strategy": "text", "value": "Welcome Back" }`
-- **Output**: `page.getByText("Welcome Back")`
-
-### 5.3 CSS Locator (`css`)
-- **DSL**: `{ "strategy": "css", "value": "#email-input" }`
-- **Output**: `page.locator("#email-input")`
-
----
-
-## 6. Screenshot Filename Sanitization (`sanitizeScreenshotFilename`)
-
-Screenshot step filenames are deterministically sanitized to guarantee filesystem safety:
-- **Path Traversal Protection**: Sequences like `../../secret` are stripped to prevent unauthorized directory access.
-- **Illegal Characters**: Characters like `/ \ ? % * : | " < >` are replaced or removed.
-- **Space Replacement**: Spaces are converted to hyphens (e.g. `"Login Success"` $\rightarrow$ `"login-success.png"`).
-- **Fallback Naming**: If `name` is omitted, the step `id` (e.g. `"step-7"`) is used as the filename (`"step-7.png"`).
-
----
-
-## 7. String Escaping & Security
+## 8. String Escaping & Security
 
 All user string values (`dsl.name`, `fill.value`, `assertText.expectedText`, locator values) are safely escaped using `JSON.stringify()` via `toTsString()`. This prevents code injection attacks (e.g. `Login"); process.exit(1); //`), rendering user input strictly as literal strings inside generated TypeScript code.
 
 ---
 
-## 8. Complete Conversion Example
+## 9. Complete 7-Step Conversion Example with Fallback
 
-### Input DSL (`full-test.json`)
+### Input DSL
 
 ```json
 {
   "version": "1.0",
-  "name": "TestForge Complete Demo",
-  "description": "Demonstrates all TestForge step types",
+  "name": "Day 10 Full Regression Test",
   "steps": [
-    {
-      "id": "step-1",
-      "type": "navigate",
-      "url": "https://example.com"
-    },
-    {
-      "id": "step-2",
-      "type": "click",
-      "locator": {
-        "strategy": "role",
-        "value": "link",
-        "name": "More information"
-      }
-    },
-    {
-      "id": "step-3",
-      "type": "fill",
-      "locator": {
-        "strategy": "css",
-        "value": "#search"
-      },
-      "value": "TestForge"
-    },
-    {
-      "id": "step-4",
-      "type": "assertVisible",
-      "locator": {
-        "strategy": "text",
-        "value": "Example Domain"
-      }
-    },
-    {
-      "id": "step-5",
-      "type": "assertText",
-      "locator": {
-        "strategy": "css",
-        "value": "h1"
-      },
-      "expectedText": "Example Domain"
-    },
-    {
-      "id": "step-6",
-      "type": "wait",
-      "duration": 1000
-    },
-    {
-      "id": "step-7",
-      "type": "screenshot",
-      "name": "complete-test",
-      "fullPage": true
-    }
+    { "id": "s1", "type": "navigate", "url": "{{BASE_URL}}/login" },
+    { "id": "s2", "type": "fill", "locator": { "strategy": "role", "role": "textbox", "name": "Email" }, "value": "test@example.com" },
+    { "id": "s3", "type": "fill", "locator": { "strategy": "css", "value": "#password" }, "value": "password123" },
+    { "id": "s4", "type": "click", "locator": { "strategy": "role", "role": "button", "name": "Login", "fallback": { "strategy": "css", "value": "#login" } } },
+    { "id": "s5", "type": "assertVisible", "locator": { "strategy": "text", "value": "Dashboard" } },
+    { "id": "s6", "type": "assertText", "locator": { "strategy": "css", "value": "#message" }, "expectedText": "Success" },
+    { "id": "s7", "type": "wait", "duration": 1000 },
+    { "id": "s8", "type": "screenshot", "name": "login-success" }
   ]
 }
 ```
 
-### Generated Playwright TypeScript (`full-test.spec.ts`)
+### Generated Playwright TypeScript Output
 
 ```typescript
 import { test, expect } from "@playwright/test";
 
-test("TestForge Complete Demo", async ({ page }) => {
-  await page.goto("https://example.com");
+test("Day 10 Full Regression Test", async ({ page }) => {
+  await page.goto(`${process.env.BASE_URL}/login`);
 
-  await page.getByRole("link", { name: "More information" }).click();
+  await page.getByRole("textbox", { name: "Email" }).fill("test@example.com");
 
-  await page.locator("#search").fill("TestForge");
+  await page.locator("#password").fill("password123");
 
-  await expect(page.getByText("Example Domain")).toBeVisible();
+  await (await (async () => {
+    const primary = page.getByRole("button", { name: "Login" });
+    if (await primary.count() > 0) {
+      return primary;
+    }
+    return page.locator("#login");
+  })()).click();
 
-  await expect(page.locator("h1")).toHaveText("Example Domain");
+  await expect(page.getByText("Dashboard")).toBeVisible();
+
+  await expect(page.locator("#message")).toHaveText("Success");
 
   await page.waitForTimeout(1000);
 
   await page.screenshot({
-    path: "complete-test.png",
-    fullPage: true
+    path: "login-success.png",
+    fullPage: false
   });
 });
 ```
 
 ---
 
-## 9. Current Implementation Scope & Roadmap
+## 10. Current Implementation Scope & Roadmap
 
-- **Implemented (Day 9)**: Full DSL $\rightarrow$ Playwright `.spec.ts` generator (`dslToPlaywrightScript`), file writer (`writePlaywrightTestFile`), CLI runner (`cli.js`), 7 step generators, process.env URL template literals, safe string escaping, path sanitization.
+- **Implemented (Day 10)**: Full DSL $\rightarrow$ Playwright `.spec.ts` generator, role/text/css locator strategies, fallback locator resolution & code generation, developer-friendly validation error messages, 69 passing unit tests.
 - **Not Yet Implemented**:
   - Playwright browser execution worker service (`apps/worker` - Week 3)
   - Run model, screenshot storage backend, React UI (Week 3+)
