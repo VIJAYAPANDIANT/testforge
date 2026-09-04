@@ -18,20 +18,22 @@ Playwright Worker (apps/worker)
 ## Current Status
 
 ```
-🚧 Week 2 — Code Generation Engine
+🚧 Week 3 — Execution Engine
 ✅ Day 6 — Formal DSL Schema & Validator completed
 ✅ Day 7 — Navigate, Click and Fill code generation completed
 ✅ Day 8 — AssertVisible, AssertText, Wait and Screenshot code generation completed
 ✅ Day 9 — Complete DSL → Playwright .spec.ts generation completed
 ✅ Day 10 — Locator Strategies, Validation & Fallback Locators completed
+✅ Day 11 — Standalone Playwright Execution Worker (apps/worker) completed
 ```
 
 ## Test Workflow DSL & Code Generation Engine
 
-TestForge converts visual test workflows defined in JSON DSL into complete, runnable Playwright TypeScript (`.spec.ts`) test files.
+TestForge converts visual test workflows defined in JSON DSL into complete, runnable Playwright TypeScript (`.spec.ts`) test files and executes them via the standalone worker module.
 
 - **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
-- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)). As of Day 10, features locator strategies (`role`, `text`, `css`), fallback locator generation, developer-friendly validation, and converts full DSL workflows into complete ES module `.spec.ts` test files ready for `npx playwright test`.
+- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)).
+- **Execution Worker**: Implemented in `@testforge/worker` (doc in [`apps/worker/README.md`](file:///c:/testforge/testforge/apps/worker/README.md)). Executes generated `.spec.ts` test files using Playwright & Chromium in headless mode, returning structured results (`status`, `exitCode`, `stdout`, `stderr`, `durationMs`).
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}` mapped to `process.env.BASE_URL`)
@@ -51,7 +53,8 @@ Supported step types:
 | Playwright Step Code Generation (All 7 Steps) | ✅ Completed (Week 2 Days 7-8) |
 | Full `.spec.ts` Test File Code Generator | ✅ Completed (Week 2 Day 9) |
 | Locator Strategies, Validation & Fallback Locators | ✅ Completed (Week 2 Day 10) |
-| Playwright Browser Worker Execution Engine | ⏳ Coming Week 3 (`apps/worker`) |
+| Standalone Playwright Execution Worker | ✅ Completed (Week 3 Day 11) |
+| Server Execution Integration & API | ⏳ Coming Week 3 Day 12 |
 | React Visual Test Builder UI | ⏳ Coming Week 3 (`apps/client`) |
 
 ## Repository Structure
@@ -68,7 +71,10 @@ testforge/
 │   │       ├── models/      # User, Project, TestCase, Environment Mongoose models
 │   │       ├── routes/      # Auth, Health, Project, TestCase, Environment routers
 │   │       └── utils/       # Shared utilities
-│   └── worker/              # Playwright execution worker (coming Week 3)
+│   └── worker/              # Standalone Playwright execution worker ← active
+│       ├── fixtures/        # Passing & failing test fixtures
+│       ├── src/             # Execution runner & CLI tool
+│       └── tests/           # Worker unit & integration tests
 │
 ├── docs/
 │   ├── DSL_SPEC.md          # Complete TestForge DSL specification v1.0
@@ -77,7 +83,7 @@ testforge/
 │   └── postman/             # Postman collection & environment
 │
 ├── packages/
-│   ├── dsl-schema/          # Shared DSL schema & validation engine
+│   ├── dsl-schema/          # Shared DSL schema definitions and validator
 │   └── codegen/             # Playwright TypeScript code generation engine
 │       ├── src/             # Step generators, locator generators, dslToPlaywrightScript, CLI
 │       ├── examples/        # DSL fixtures and generated .spec.ts files
@@ -197,6 +203,6 @@ The API will be available at:
 |---|---|
 | `@testforge/server` | Express REST API |
 | `@testforge/client` | React frontend (placeholder) |
-| `@testforge/worker` | Playwright worker (placeholder) |
+| `@testforge/worker` | Standalone Playwright test execution worker |
 | `@testforge/dsl-schema` | Shared DSL schema definitions and validator |
 | `@testforge/codegen` | Playwright TypeScript code generation engine |

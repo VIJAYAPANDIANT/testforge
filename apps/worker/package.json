@@ -1,6 +1,18 @@
 {
   "name": "@testforge/worker",
   "version": "1.0.0",
-  "description": "TestForge Playwright execution worker — placeholder for Week 3",
-  "private": true
+  "description": "TestForge Playwright test execution worker",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "execute": "node src/cli.js",
+    "test:run": "node src/cli.js"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.50.0"
+  }
 }
