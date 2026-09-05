@@ -6,9 +6,13 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
+    "@testforge/codegen": "*",
+    "@testforge/dsl-schema": "*",
+    "@testforge/worker": "*",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

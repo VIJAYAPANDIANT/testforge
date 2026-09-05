@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes.js';
 import projectRoutes from './routes/project.routes.js';
 import testCaseRoutes from './routes/testCase.routes.js';
 import environmentRoutes from './routes/environment.routes.js';
+import runRoutes from './routes/run.routes.js';
 import { notFound, errorHandler } from './middleware/error.middleware.js';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/test-cases', testCaseRoutes);
 app.use('/api/environments', environmentRoutes);
+app.use('/api/runs', runRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 
