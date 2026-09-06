@@ -2,8 +2,11 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { runTestCaseExecution } from '../src/services/execution.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe('Day 12 — Execution Service (apps/server)', () => {
   describe('Input & DSL Validation', () => {
@@ -87,10 +90,11 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       assert.equal(result.success, true);
       assert.equal(result.data.status, 'passed');
       assert.equal(result.data.exitCode, 0);
+      assert.equal(result.data.screenshotPath, null);
       assert.ok(typeof result.data.durationMs === 'number' && result.data.durationMs > 0);
     });
 
-    test('Executes failing test case DSL and returns status failed (exitCode 1)', async () => {
+    test('Executes failing test case DSL and returns status failed (exitCode 1) with screenshotPath', async () => {
       const failingTestCase = {
         _id: '507f1f77bcf86cd799439014',
         dsl: {
@@ -121,11 +125,15 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       assert.equal(result.success, false);
       assert.equal(result.data.status, 'failed');
       assert.equal(result.data.exitCode, 1);
+      assert.ok(typeof result.data.screenshotPath === 'string');
+      assert.ok(result.data.screenshotPath.startsWith('/uploads/screenshots/run-'));
+      assert.ok(result.data.screenshotPath.endsWith('.png'));
       assert.ok(typeof result.data.durationMs === 'number' && result.data.durationMs > 0);
     });
 
     test('Cleans up temporary spec files after execution', async () => {
-      const tempRunDir = path.join(os.tmpdir(), 'testforge-runs');
+      const repoRoot = path.resolve(__dirname, '../../..');
+      const tempRunDir = path.resolve(repoRoot, 'scratch/testforge-runs');
 
       const initialFiles = fs.existsSync(tempRunDir) ? fs.readdirSync(tempRunDir) : [];
 
@@ -144,6 +152,36 @@ describe('Day 12 — Execution Service (apps/server)', () => {
 
       // Temporary files created during run must be cleaned up
       assert.equal(finalFiles.length, initialFiles.length);
+    });
+  });
+
+  describe('Day 13 — Failure Screenshot Integration', () => {
+    test('Failing execution result provides valid screenshot file path', async () => {
+      const failingTestCase = {
+        _id: '507f1f77bcf86cd799439016',
+        dsl: {
+          version: '1.0',
+          name: 'Screenshot Integration Test',
+          steps: [
+            { id: 's1', type: 'navigate', url: 'https://example.com' },
+            { id: 's2', type: 'click', locator: { strategy: 'css', value: '#non-existent-button-xyz' } },
+          ],
+        },
+      };
+
+      const result = await runTestCaseExecution({ testCase: failingTestCase });
+
+      assert.equal(result.statusCode, 200);
+      assert.equal(result.success, false);
+      assert.equal(result.data.status, 'failed');
+      assert.ok(typeof result.data.screenshotPath === 'string');
+      assert.ok(result.data.screenshotPath.startsWith('/uploads/screenshots/run-'));
+
+      // Verify that the screenshot file actually exists on disk in worker/uploads
+      const relativePart = result.data.screenshotPath.substring('/uploads/'.length);
+      const repoRoot = path.resolve(__dirname, '../../..');
+      const localFilePath = path.resolve(repoRoot, 'apps/worker/uploads', relativePart);
+      assert.ok(fs.existsSync(localFilePath), `Screenshot file should exist at ${localFilePath}`);
     });
   });
 });

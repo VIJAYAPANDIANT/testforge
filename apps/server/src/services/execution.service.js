@@ -66,7 +66,8 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
   }
 
   const uniqueId = crypto.randomUUID();
-  const tempFilePath = path.join(tempDir, `run-${uniqueId}.spec.ts`);
+  const runId = `run-${uniqueId}`;
+  const tempFilePath = path.join(tempDir, `${runId}.spec.ts`);
 
   try {
     fs.writeFileSync(tempFilePath, scriptContent, 'utf8');
@@ -86,7 +87,7 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
     const timeoutMs = parseInt(process.env.TEST_EXECUTION_TIMEOUT_MS, 10) || 60000;
     const startTime = Date.now();
 
-    console.log(`[TestForge] Starting test execution for TestCase: ${testCase._id || testCase.id}`);
+    console.log(`[TestForge] Starting test execution for TestCase: ${testCase._id || testCase.id} (Run: ${runId})`);
 
     return await new Promise((resolve) => {
       let stdout = '';
@@ -99,7 +100,7 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
         FORCE_COLOR: '0',
       };
 
-      const child = spawn(process.execPath, [workerCliPath, tempFilePath], {
+      const child = spawn(process.execPath, [workerCliPath, tempFilePath, '--run-id', runId], {
         cwd: repoRoot,
         env: childEnv,
       });
@@ -126,6 +127,8 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
               stdout: stdout.trim(),
               stderr: (stderr + '\nExecution timed out after ' + timeoutMs + 'ms').trim(),
               durationMs,
+              runId,
+              screenshotPath: null,
             },
           });
         }
@@ -163,7 +166,23 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
           const exitCode = code !== null ? code : 1;
           const isPassed = exitCode === 0;
 
+          let parsedResult = null;
+          const resultLine = stdout.split('\n').find((line) => line.trim().startsWith('TESTFORGE_RESULT:'));
+          if (resultLine) {
+            try {
+              const jsonStr = resultLine.trim().substring('TESTFORGE_RESULT:'.length).trim();
+              parsedResult = JSON.parse(jsonStr);
+            } catch (e) {
+              console.error('[TestForge] Failed to parse TESTFORGE_RESULT:', e.message);
+            }
+          }
+
+          const screenshotPath = parsedResult?.screenshotPath || null;
+
           console.log(`[TestForge] Execution completed: ${isPassed ? 'passed' : 'failed'} (Exit code: ${exitCode})`);
+          if (screenshotPath) {
+            console.log(`[TestForge] Failure screenshot saved: ${screenshotPath}`);
+          }
 
           resolve({
             statusCode: 200,
@@ -175,6 +194,8 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
               stdout: stdout.trim(),
               stderr: stderr.trim(),
               durationMs,
+              runId,
+              screenshotPath,
             },
           });
         }

@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
  * Explicitly targets Chromium browser in headless mode by default.
  */
 export default defineConfig({
-  testDir: '.',
+  testDir: '../../',
   timeout: 30000,
   expect: {
     timeout: 5000,
@@ -19,7 +19,7 @@ export default defineConfig({
     actionTimeout: 10000,
     trace: 'off',
     video: 'off',
-    screenshot: 'off',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {

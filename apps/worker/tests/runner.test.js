@@ -77,6 +77,7 @@ describe('Day 11 — Playwright Execution Runner (apps/worker)', () => {
       assert.equal(result.success, true);
       assert.equal(result.status, 'passed');
       assert.equal(result.exitCode, 0);
+      assert.equal(result.screenshotPath, null);
       assert.ok(typeof result.durationMs === 'number' && result.durationMs > 0);
       assert.ok(result.stdout.includes('1 passed') || result.stdout.includes('passed'));
     });
@@ -89,7 +90,27 @@ describe('Day 11 — Playwright Execution Runner (apps/worker)', () => {
       assert.equal(result.success, false);
       assert.equal(result.status, 'failed');
       assert.equal(result.exitCode, 1);
+      assert.ok(typeof result.screenshotPath === 'string');
+      assert.ok(result.screenshotPath.startsWith('/uploads/screenshots/run-'));
+      assert.ok(result.screenshotPath.endsWith('.png'));
       assert.ok(typeof result.durationMs === 'number' && result.durationMs > 0);
+    });
+  });
+
+  describe('Day 13 — Failure Screenshot Capture', () => {
+    test('Returns screenshotPath null for passing test execution', async () => {
+      const passingFixturePath = path.join(__dirname, '../fixtures/passing.spec.ts');
+      const result = await runPlaywrightTest(passingFixturePath);
+      assert.equal(result.screenshotPath, null);
+    });
+
+    test('Captures screenshot on failure and returns relative public screenshotPath', async () => {
+      const failingFixturePath = path.join(__dirname, '../fixtures/failing.spec.ts');
+      const result = await runPlaywrightTest(failingFixturePath);
+      assert.equal(result.success, false);
+      assert.ok(typeof result.screenshotPath === 'string');
+      assert.ok(result.screenshotPath.startsWith('/uploads/screenshots/run-'));
+      assert.ok(result.screenshotPath.endsWith('.png'));
     });
   });
 });

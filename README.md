@@ -25,6 +25,7 @@ Playwright Worker (apps/worker)
 ✅ Day 10 — Locator Strategies, Validation & Fallback Locators completed
 ✅ Day 11 — Standalone Playwright Execution Worker (apps/worker) completed
 ✅ Day 12 — POST /api/runs Server Worker Integration completed
+✅ Day 13 — Automatic Failure Screenshot Capture & Static URL Serving completed
 ```
 
 ## Test Workflow DSL & Code Generation Engine
@@ -34,7 +35,7 @@ TestForge converts visual test workflows defined in JSON DSL into complete, runn
 - **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
 - **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)).
 - **Execution Worker**: Implemented in `@testforge/worker` (doc in [`apps/worker/README.md`](file:///c:/testforge/testforge/apps/worker/README.md)).
-- **Server Execution API**: Exposed via `POST /api/runs` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, and returns structured execution results (`passed` / `failed`, `exitCode`, `stdout`, `stderr`, `durationMs`).
+- **Server Execution API**: Exposed via `POST /api/runs` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, captures failure screenshots automatically, serves them statically via `/uploads`, and returns structured execution results (`passed` / `failed`, `exitCode`, `stdout`, `stderr`, `durationMs`, `screenshotPath`).
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}` mapped to environment `baseUrl`)
@@ -56,6 +57,7 @@ Supported step types:
 | Locator Strategies, Validation & Fallback Locators | ✅ Completed (Week 2 Day 10) |
 | Standalone Playwright Execution Worker | ✅ Completed (Week 3 Day 11) |
 | Server Execution Integration (`POST /api/runs`) | ✅ Completed (Week 3 Day 12) |
+| Automatic Failure Screenshot Capture & Static Serving | ✅ Completed (Week 3 Day 13) |
 | React Visual Test Builder UI | ⏳ Coming Week 3 (`apps/client`) |
 
 ## Repository Structure
@@ -76,6 +78,7 @@ testforge/
 │   └── worker/              # Standalone Playwright execution worker ← active
 │       ├── fixtures/        # Passing & failing test fixtures
 │       ├── src/             # Execution runner & CLI tool
+│       ├── uploads/         # Failure screenshot storage (/uploads)
 │       └── tests/           # Worker unit & integration tests
 │
 ├── docs/
@@ -96,11 +99,12 @@ testforge/
 
 ## API Endpoints
 
-### Test Execution API (Day 12)
+### Test Execution API (Day 12–13)
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|:---:|---|
-| `POST` | `/api/runs` | ✅ Bearer | Execute a test case via Playwright worker |
+| `POST` | `/api/runs` | ✅ Bearer | Execute a test case via Playwright worker & capture failure screenshot |
+| `GET` | `/uploads/*` | ❌ | Access captured failure screenshot PNG images |
 
 **Request Body**:
 ```json
@@ -119,12 +123,14 @@ testforge/
     "exitCode": 0,
     "stdout": "...",
     "stderr": "",
-    "durationMs": 2340
+    "durationMs": 2340,
+    "runId": "run-1234",
+    "screenshotPath": null
   }
 }
 ```
 
-**Response (HTTP 200 - Failed Assertion)**:
+**Response (HTTP 200 - Failed Assertion with Screenshot)**:
 ```json
 {
   "success": false,
@@ -132,7 +138,10 @@ testforge/
     "status": "failed",
     "exitCode": 1,
     "stdout": "...",
-    "stderr": "..."
+    "stderr": "...",
+    "durationMs": 3410,
+    "runId": "run-5678",
+    "screenshotPath": "/uploads/screenshots/run-5678/test-failed-1.png"
   }
 }
 ```

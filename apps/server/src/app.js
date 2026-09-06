@@ -8,9 +8,19 @@ import environmentRoutes from './routes/environment.routes.js';
 import runRoutes from './routes/run.routes.js';
 import { notFound, errorHandler } from './middleware/error.middleware.js';
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '../../worker/uploads');
+
 const app = express();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
+
+// Serve uploaded screenshots statically
+app.use('/uploads', express.static(uploadsDir));
 
 // Parse incoming JSON request bodies
 app.use(express.json());

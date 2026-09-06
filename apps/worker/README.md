@@ -12,7 +12,8 @@ The **TestForge Worker** executes generated Playwright TypeScript (`.spec.ts`) t
 - **Chromium Only**: Targets Playwright's Chromium engine.
 - **Headless Default**: Runs headless by default (`HEADLESS=true`), supporting `--headed` or `HEADLESS=false` override.
 - **Environment Resolution**: Passes `BASE_URL` environment variables to the Playwright process.
-- **Structured Execution Result**: Returns status (`passed` / `failed`), exit code (`0` / `1`), stdout, stderr, and duration in ms.
+- **Automatic Failure Screenshot Capture**: Automatically captures screenshots on test failures when `screenshot: 'only-on-failure'` is enabled and saves PNG images under `apps/worker/uploads/screenshots/run-<uuid>/`.
+- **Structured Execution Result**: Returns status (`passed` / `failed`), exit code (`0` / `1`), stdout, stderr, duration in ms, `runId`, and `screenshotPath`.
 - **CLI & Module API**: Exposed via programmatic API (`runPlaywrightTest`) and CLI tool (`node apps/worker/src/cli.js`).
 
 ---
@@ -23,6 +24,7 @@ The **TestForge Worker** executes generated Playwright TypeScript (`.spec.ts`) t
 import { runPlaywrightTest } from '@testforge/worker';
 
 const result = await runPlaywrightTest('./fixtures/passing.spec.ts', {
+  runId: 'run-1234',
   baseUrl: 'https://example.com',
   headless: true
 });
@@ -36,7 +38,9 @@ console.log(result);
   stdout: '...',
   stderr: '',
   durationMs: 2300,
-  testFilePath: 'C:\\testforge\\testforge\\apps\\worker\\fixtures\\passing.spec.ts'
+  testFilePath: 'C:\\testforge\\testforge\\apps\\worker\\fixtures\\passing.spec.ts',
+  runId: 'run-1234',
+  screenshotPath: null
 }
 */
 ```
@@ -48,7 +52,7 @@ console.log(result);
 Run a test file directly from the command line:
 
 ```bash
-node apps/worker/src/cli.js apps/worker/fixtures/passing.spec.ts
+node apps/worker/src/cli.js apps/worker/fixtures/passing.spec.ts --run-id run-1234
 ```
 
 Or using npm workspace script:
@@ -62,6 +66,7 @@ npm run execute --workspace=apps/worker -- apps/worker/fixtures/passing.spec.ts
 | Flag / Env Var | Description |
 |---|---|
 | `--base-url <url>` | Pass target `BASE_URL` for `{{BASE_URL}}` placeholders |
+| `--run-id <run-id>` | Assign a unique execution run ID |
 | `--headed` | Run browser in visible headed mode |
 | `BASE_URL=<url>` | Environment variable for target URL |
 | `HEADLESS=false` | Environment variable to disable headless execution |

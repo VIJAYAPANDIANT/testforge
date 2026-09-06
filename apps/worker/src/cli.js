@@ -15,6 +15,10 @@ const parseArgs = () => {
       options.baseUrl = args[++i];
     } else if (arg.startsWith('--base-url=')) {
       options.baseUrl = arg.split('=')[1];
+    } else if (arg === '--run-id' && i + 1 < args.length) {
+      options.runId = args[++i];
+    } else if (arg.startsWith('--run-id=')) {
+      options.runId = arg.split('=')[1];
     } else if (arg === '--headed') {
       options.headless = false;
     } else if (!arg.startsWith('-') && !testFilePath) {
@@ -29,7 +33,7 @@ const runCli = async () => {
   const { testFilePath, options } = parseArgs();
 
   if (!testFilePath) {
-    console.error('Usage: node apps/worker/src/cli.js <test-file.spec.ts> [--base-url <url>] [--headed]');
+    console.error('Usage: node apps/worker/src/cli.js <test-file.spec.ts> [--base-url <url>] [--run-id <run-id>] [--headed]');
     process.exit(1);
   }
 
@@ -41,17 +45,23 @@ const runCli = async () => {
   console.log('');
   console.log('TestForge Worker Execution');
   console.log('--------------------------');
-  console.log(`Test:     ${relativePath || testFilePath}`);
-  console.log(`Browser:  Chromium (${isHeadless ? 'Headless' : 'Headed'})`);
-  console.log(`Status:   ${result.status.toUpperCase()}`);
-  console.log(`Exit code: ${result.exitCode}`);
-  console.log(`Duration: ${result.durationMs}ms`);
+  console.log(`Test:       ${relativePath || testFilePath}`);
+  console.log(`Browser:    Chromium (${isHeadless ? 'Headless' : 'Headed'})`);
+  console.log(`Status:     ${result.status.toUpperCase()}`);
+  console.log(`Exit code:  ${result.exitCode}`);
+  console.log(`Duration:   ${result.durationMs}ms`);
+  if (result.screenshotPath) {
+    console.log(`Screenshot: ${result.screenshotPath}`);
+  }
 
   if (result.error || (!result.success && result.stderr)) {
     console.log('');
     console.log('Error Details:');
     console.log(result.error || result.stderr);
   }
+
+  console.log('');
+  console.log(`TESTFORGE_RESULT: ${JSON.stringify(result)}`);
 
   process.exitCode = result.exitCode;
 };

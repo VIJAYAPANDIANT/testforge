@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execFile } from 'node:child_process';
@@ -7,6 +8,28 @@ import { execFile } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
+
+/**
+ * Recursively searches a directory for the first .png screenshot file.
+ *
+ * @param {string} dirPath - Directory path to search
+ * @returns {string|null} Absolute path to the screenshot file, or null if not found
+ */
+const findScreenshotFile = (dirPath) => {
+  if (!fs.existsSync(dirPath)) return null;
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      const found = findScreenshotFile(fullPath);
+      if (found) return found;
+    } else if (entry.isFile() && entry.name.endsWith('.png')) {
+      return fullPath;
+    }
+  }
+  return null;
+};
 
 /**
  * Validates the input test file path for existence, file type, extension, and readability.
@@ -50,15 +73,18 @@ export const validateTestFilePath = (testFilePath) => {
  *
  * @param {string} testFilePath - Path to the Playwright .spec.ts or .spec.js file
  * @param {object} [options={}] - Execution options
+ * @param {string} [options.runId] - Unique execution ID (default: run-<uuid>)
  * @param {string} [options.baseUrl] - Base URL for process.env.BASE_URL
  * @param {boolean} [options.headless] - Whether to run in headless mode (default: true)
  * @param {number} [options.timeout=60000] - Maximum execution timeout in milliseconds
  * @param {object} [options.env={}] - Additional environment variables
- * @returns {Promise<{ success: boolean, status: 'passed'|'failed', exitCode: number, stdout: string, stderr: string, durationMs: number, testFilePath: string, error?: string }>}
+ * @returns {Promise<{ success: boolean, status: 'passed'|'failed', exitCode: number, stdout: string, stderr: string, durationMs: number, testFilePath: string, runId: string, screenshotPath: string|null, error?: string }>}
  */
 export const runPlaywrightTest = (testFilePath, options = {}) => {
   return new Promise((resolve) => {
     const startTime = Date.now();
+    const runId = options.runId || `run-${crypto.randomUUID()}`;
+    const outputDir = options.outputDir || path.resolve(__dirname, '../uploads/screenshots', runId);
 
     // 1. Validate file path
     let resolvedPath;
@@ -74,6 +100,8 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
         stderr: validationError.message,
         durationMs,
         testFilePath: testFilePath ? path.resolve(testFilePath) : '',
+        runId,
+        screenshotPath: null,
         error: validationError.message,
       });
     }
@@ -95,6 +123,8 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
         stderr: errorMessage,
         durationMs,
         testFilePath: resolvedPath,
+        runId,
+        screenshotPath: null,
         error: errorMessage,
       });
     }
@@ -114,6 +144,8 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
         stderr: errorMessage,
         durationMs,
         testFilePath: resolvedPath,
+        runId,
+        screenshotPath: null,
         error: errorMessage,
       });
     }
@@ -131,12 +163,16 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
 
     // Convert Windows backslashes to forward slashes for Playwright CLI pattern matching
     const normalizedPath = resolvedPath.replace(/\\/g, '/');
+    const normalizedOutputDir = outputDir.replace(/\\/g, '/');
+    const configPath = path.resolve(__dirname, '../playwright.config.js').replace(/\\/g, '/');
 
     const args = [
       playwrightCliPath,
       'test',
       normalizedPath,
-      '--browser=chromium',
+      '--project=chromium',
+      `--config=${configPath}`,
+      `--output=${normalizedOutputDir}`,
     ];
 
     execFile(
@@ -153,6 +189,15 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
         const exitCode = error && error.code !== undefined ? (typeof error.code === 'number' ? error.code : 1) : 0;
         const success = exitCode === 0;
 
+        let screenshotPath = null;
+        if (!success) {
+          const foundFile = findScreenshotFile(outputDir);
+          if (foundFile) {
+            const relativeToOutputDir = path.relative(outputDir, foundFile).replace(/\\/g, '/');
+            screenshotPath = `/uploads/screenshots/${runId}/${relativeToOutputDir}`;
+          }
+        }
+
         resolve({
           success,
           status: success ? 'passed' : 'failed',
@@ -161,6 +206,8 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
           stderr: stderr || (error ? error.message : ''),
           durationMs,
           testFilePath: resolvedPath,
+          runId,
+          screenshotPath,
           ...(error && !success ? { error: error.message } : {}),
         });
       }
