@@ -26,6 +26,7 @@ Playwright Worker (apps/worker)
 ✅ Day 11 — Standalone Playwright Execution Worker (apps/worker) completed
 ✅ Day 12 — POST /api/runs Server Worker Integration completed
 ✅ Day 13 — Automatic Failure Screenshot Capture & Static URL Serving completed
+✅ Day 14 — MongoDB Persistence for Test Execution (Run & RunResult models) completed
 ```
 
 ## Test Workflow DSL & Code Generation Engine
@@ -35,7 +36,7 @@ TestForge converts visual test workflows defined in JSON DSL into complete, runn
 - **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
 - **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)).
 - **Execution Worker**: Implemented in `@testforge/worker` (doc in [`apps/worker/README.md`](file:///c:/testforge/testforge/apps/worker/README.md)).
-- **Server Execution API**: Exposed via `POST /api/runs` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, captures failure screenshots automatically, serves them statically via `/uploads`, and returns structured execution results (`passed` / `failed`, `exitCode`, `stdout`, `stderr`, `durationMs`, `screenshotPath`).
+- **Server Execution API**: Exposed via `POST /api/runs` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, persists `Run` (`queued` → `running` → `passed`/`failed`) and `RunResult` records in MongoDB, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, captures failure screenshots automatically, serves them statically via `/uploads`, and returns structured execution results (`runId`, `status`, `exitCode`, `stdout`, `stderr`, `durationMs`, `screenshotPath`).
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}` mapped to environment `baseUrl`)
@@ -58,6 +59,7 @@ Supported step types:
 | Standalone Playwright Execution Worker | ✅ Completed (Week 3 Day 11) |
 | Server Execution Integration (`POST /api/runs`) | ✅ Completed (Week 3 Day 12) |
 | Automatic Failure Screenshot Capture & Static Serving | ✅ Completed (Week 3 Day 13) |
+| MongoDB Persistence (`Run` & `RunResult` models) | ✅ Completed (Week 3 Day 14) |
 | React Visual Test Builder UI | ⏳ Coming Week 3 (`apps/client`) |
 
 ## Repository Structure
@@ -71,9 +73,9 @@ testforge/
 │   │       ├── config/      # MongoDB connection
 │   │       ├── controllers/ # Auth, Project, TestCase, Environment, Run controllers
 │   │       ├── middleware/  # Auth, ObjectId & error handling middleware
-│   │       ├── models/      # User, Project, TestCase, Environment Mongoose models
+│   │       ├── models/      # User, Project, TestCase, Environment, Run, RunResult Mongoose models
 │   │       ├── routes/      # Auth, Health, Project, TestCase, Environment, Run routers
-│   │       ├── services/    # TestCase execution service (spawns worker)
+│   │       ├── services/    # TestCase execution service (spawns worker & persists Run/RunResult)
 │   │       └── utils/       # Shared utilities
 │   └── worker/              # Standalone Playwright execution worker ← active
 │       ├── fixtures/        # Passing & failing test fixtures
@@ -99,11 +101,11 @@ testforge/
 
 ## API Endpoints
 
-### Test Execution API (Day 12–13)
+### Test Execution API (Day 12–14)
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|:---:|---|
-| `POST` | `/api/runs` | ✅ Bearer | Execute a test case via Playwright worker & capture failure screenshot |
+| `POST` | `/api/runs` | ✅ Bearer | Execute test case, persist Run/RunResult in MongoDB, capture failure screenshots |
 | `GET` | `/uploads/*` | ❌ | Access captured failure screenshot PNG images |
 
 **Request Body**:
@@ -119,12 +121,12 @@ testforge/
 {
   "success": true,
   "data": {
+    "runId": "66d9a10777f204cd53e56d96",
     "status": "passed",
     "exitCode": 0,
     "stdout": "...",
     "stderr": "",
     "durationMs": 2340,
-    "runId": "run-1234",
     "screenshotPath": null
   }
 }
@@ -135,13 +137,13 @@ testforge/
 {
   "success": false,
   "data": {
+    "runId": "66d9a10867f204cd53e56d98",
     "status": "failed",
     "exitCode": 1,
     "stdout": "...",
     "stderr": "...",
     "durationMs": 3410,
-    "runId": "run-5678",
-    "screenshotPath": "/uploads/screenshots/run-5678/test-failed-1.png"
+    "screenshotPath": "/uploads/screenshots/66d9a10867f204cd53e56d98/test-failed-1.png"
   }
 }
 ```

@@ -126,7 +126,7 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       assert.equal(result.data.status, 'failed');
       assert.equal(result.data.exitCode, 1);
       assert.ok(typeof result.data.screenshotPath === 'string');
-      assert.ok(result.data.screenshotPath.startsWith('/uploads/screenshots/run-'));
+      assert.ok(result.data.screenshotPath.startsWith('/uploads/screenshots/'));
       assert.ok(result.data.screenshotPath.endsWith('.png'));
       assert.ok(typeof result.data.durationMs === 'number' && result.data.durationMs > 0);
     });
@@ -175,13 +175,41 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       assert.equal(result.success, false);
       assert.equal(result.data.status, 'failed');
       assert.ok(typeof result.data.screenshotPath === 'string');
-      assert.ok(result.data.screenshotPath.startsWith('/uploads/screenshots/run-'));
+      assert.ok(result.data.screenshotPath.startsWith('/uploads/screenshots/'));
 
       // Verify that the screenshot file actually exists on disk in worker/uploads
       const relativePart = result.data.screenshotPath.substring('/uploads/'.length);
       const repoRoot = path.resolve(__dirname, '../../..');
       const localFilePath = path.resolve(repoRoot, 'apps/worker/uploads', relativePart);
       assert.ok(fs.existsSync(localFilePath), `Screenshot file should exist at ${localFilePath}`);
+    });
+  });
+
+  describe('Day 14 — Persistence & Run Result Recording', () => {
+    test('Execution service returns valid runId in response data', async () => {
+      const testCase = {
+        _id: '507f1f77bcf86cd799439017',
+        dsl: {
+          version: '1.0',
+          name: 'RunId Persistence Test',
+          steps: [{ id: 's1', type: 'navigate', url: 'https://example.com' }],
+        },
+      };
+
+      const result = await runTestCaseExecution({ testCase });
+      assert.equal(result.statusCode, 200);
+      assert.equal(result.success, true);
+      assert.ok(typeof result.data.runId === 'string');
+      assert.ok(result.data.runId.length > 0);
+    });
+
+    test('truncateOutput correctly limits text exceeding maximum length', async () => {
+      const { truncateOutput } = await import('../src/services/execution.service.js');
+      const longText = 'A'.repeat(60000);
+      const truncated = truncateOutput(longText, 50000);
+
+      assert.equal(truncated.length, 50000 + '\n[Output truncated at 50000 characters]'.length);
+      assert.ok(truncated.endsWith('[Output truncated at 50000 characters]'));
     });
   });
 });

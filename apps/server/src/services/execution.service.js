@@ -5,9 +5,27 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { validateTestDsl } from '@testforge/dsl-schema';
 import { dslToPlaywrightScript } from '@testforge/codegen';
+import mongoose from 'mongoose';
+import Run from '../models/Run.js';
+import RunResult from '../models/RunResult.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const MAX_RUN_OUTPUT_LENGTH = 50000;
+
+/**
+ * Safely truncates long process output strings to avoid unbounded document growth in MongoDB.
+ *
+ * @param {string} text - Raw output string
+ * @param {number} [maxLength=50000] - Maximum allowed string length
+ * @returns {string} Truncated string
+ */
+export const truncateOutput = (text, maxLength = MAX_RUN_OUTPUT_LENGTH) => {
+  if (!text || typeof text !== 'string') return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + `\n[Output truncated at ${maxLength} characters]`;
+};
 
 /**
  * Derive repository root directory relative to this service file (__dirname is apps/server/src/services).
@@ -17,15 +35,43 @@ const getRepoRoot = () => {
 };
 
 /**
- * Executes a TestCase DSL by generating a temporary Playwright .spec.ts file
- * and spawning the standalone worker process.
+ * Helper to safely save Mongoose document if MongoDB is connected.
+ */
+const safeSaveRun = async (runRecord) => {
+  if (runRecord && typeof runRecord.save === 'function' && mongoose.connection.readyState !== 0) {
+    try {
+      await runRecord.save();
+    } catch (err) {
+      console.error('[TestForge] Error saving Run record:', err.message);
+    }
+  }
+};
+
+/**
+ * Helper to safely create RunResult document if MongoDB is connected.
+ */
+const safeCreateRunResult = async (payload) => {
+  if (mongoose.connection.readyState !== 0) {
+    try {
+      await RunResult.create(payload);
+    } catch (err) {
+      console.error('[TestForge] Error creating RunResult record:', err.message);
+    }
+  }
+};
+
+/**
+ * Executes a TestCase DSL by generating a temporary Playwright .spec.ts file,
+ * persisting execution records in MongoDB (Run & RunResult), and spawning
+ * the standalone worker process.
  *
  * @param {object} params
  * @param {object} params.testCase - Mongoose TestCase document or object
  * @param {object} [params.environment] - Optional Mongoose Environment document or object
- * @returns {Promise<{ statusCode?: number, success: boolean, data?: { status: string, exitCode: number, stdout: string, stderr: string, durationMs: number, signal?: string }, error?: string, message?: string, details?: any }>}
+ * @param {object|string} [params.user] - Authenticated user object or ID
+ * @returns {Promise<{ statusCode?: number, success: boolean, data?: { runId: string, status: string, exitCode: number|null, stdout: string, stderr: string, durationMs: number, screenshotPath: string|null, signal?: string }, error?: string, message?: string, details?: any }>}
  */
-export const runTestCaseExecution = async ({ testCase, environment }) => {
+export const runTestCaseExecution = async ({ testCase, environment, user }) => {
   if (!testCase || !testCase.dsl) {
     return {
       statusCode: 400,
@@ -58,23 +104,76 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
     };
   }
 
-  // 3. Create unique temporary file inside workspace scratch directory
+  // 3. Create initial Run document in MongoDB with status "queued"
+  const userId = user?._id || (mongoose.Types.ObjectId.isValid(user) ? user : (testCase.user && mongoose.Types.ObjectId.isValid(testCase.user) ? testCase.user : new mongoose.Types.ObjectId()));
+  const projectId = testCase.project && mongoose.Types.ObjectId.isValid(testCase.project) ? testCase.project : new mongoose.Types.ObjectId();
+  const testCaseId = mongoose.Types.ObjectId.isValid(testCase._id || testCase.id) ? (testCase._id || testCase.id) : new mongoose.Types.ObjectId();
+
+  let runRecord = null;
+  if (mongoose.connection.readyState !== 0) {
+    try {
+      runRecord = await Run.create({
+        testCase: testCaseId,
+        project: projectId,
+        user: userId,
+        environment: environment?._id || environment?.id || null,
+        status: 'queued',
+      });
+    } catch (dbErr) {
+      console.error('[TestForge] Failed to create Run record in DB:', dbErr.message);
+    }
+  }
+
+  // In-memory fallback object if MongoDB is disconnected during unit testing
+  if (!runRecord) {
+    const fallbackId = new mongoose.Types.ObjectId();
+    runRecord = {
+      _id: fallbackId,
+      testCase: testCaseId,
+      project: projectId,
+      user: userId,
+      status: 'queued',
+      startedAt: null,
+      completedAt: null,
+      durationMs: 0,
+      exitCode: null,
+      stdout: '',
+      stderr: '',
+      screenshotPath: null,
+      save: async function () { return this; },
+    };
+  }
+
+  const runId = runRecord._id.toString();
+
+  // 4. Create unique temporary file inside workspace scratch directory
   const repoRoot = getRepoRoot();
   const tempDir = path.resolve(repoRoot, 'scratch/testforge-runs');
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }
 
-  const uniqueId = crypto.randomUUID();
-  const runId = `run-${uniqueId}`;
-  const tempFilePath = path.join(tempDir, `${runId}.spec.ts`);
+  const tempFilePath = path.join(tempDir, `run-${runId}.spec.ts`);
 
   try {
     fs.writeFileSync(tempFilePath, scriptContent, 'utf8');
 
-    // 4. Resolve worker CLI path
+    // 5. Resolve worker CLI path
     const workerCliPath = path.resolve(repoRoot, 'apps/worker/src/cli.js');
     if (!fs.existsSync(workerCliPath)) {
+      const completedAt = new Date();
+      runRecord.status = 'failed';
+      runRecord.completedAt = completedAt;
+      runRecord.stderr = 'Worker CLI script not found';
+      await safeSaveRun(runRecord);
+
+      await safeCreateRunResult({
+        run: runRecord._id,
+        status: 'failed',
+        exitCode: 1,
+        stderr: 'Worker CLI script not found',
+      });
+
       return {
         statusCode: 500,
         success: false,
@@ -83,9 +182,14 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
       };
     }
 
-    // 5. Spawn worker child process
-    const timeoutMs = parseInt(process.env.TEST_EXECUTION_TIMEOUT_MS, 10) || 60000;
+    // 6. Update Run status to "running" immediately before worker process spawn
+    const startedAt = new Date();
     const startTime = Date.now();
+    runRecord.status = 'running';
+    runRecord.startedAt = startedAt;
+    await safeSaveRun(runRecord);
+
+    const timeoutMs = parseInt(process.env.TEST_EXECUTION_TIMEOUT_MS, 10) || 60000;
 
     console.log(`[TestForge] Starting test execution for TestCase: ${testCase._id || testCase.id} (Run: ${runId})`);
 
@@ -108,7 +212,7 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
       console.log(`[TestForge] Worker process started (PID: ${child.pid})`);
 
       // Protect against process execution timeout
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
         if (!isSettled) {
           isSettled = true;
           try {
@@ -116,18 +220,48 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
           } catch (e) {
             // ignore kill errors
           }
+          const completedAt = new Date();
           const durationMs = Date.now() - startTime;
+          const timeoutErrMsg = (stderr + '\nExecution timed out after ' + timeoutMs + 'ms').trim();
+          const safeStdout = truncateOutput(stdout.trim());
+          const safeStderr = truncateOutput(timeoutErrMsg);
+
           console.log(`[TestForge] Worker execution timed out after ${timeoutMs}ms`);
+
+          try {
+            runRecord.status = 'failed';
+            runRecord.completedAt = completedAt;
+            runRecord.durationMs = durationMs;
+            runRecord.exitCode = 1;
+            runRecord.stdout = safeStdout;
+            runRecord.stderr = safeStderr;
+            runRecord.screenshotPath = null;
+            await safeSaveRun(runRecord);
+
+            await safeCreateRunResult({
+              run: runRecord._id,
+              status: 'failed',
+              exitCode: 1,
+              stdout: safeStdout,
+              stderr: safeStderr,
+              screenshotPath: null,
+              durationMs,
+              stepResults: [],
+            });
+          } catch (dbError) {
+            console.error('[TestForge] Failed to update timeout Run record:', dbError.message);
+          }
+
           resolve({
             statusCode: 200,
             success: false,
             data: {
+              runId,
               status: 'failed',
               exitCode: 1,
-              stdout: stdout.trim(),
-              stderr: (stderr + '\nExecution timed out after ' + timeoutMs + 'ms').trim(),
+              stdout: safeStdout,
+              stderr: safeStderr,
               durationMs,
-              runId,
               screenshotPath: null,
             },
           });
@@ -142,12 +276,40 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
         stderr += chunk.toString();
       });
 
-      child.on('error', (spawnError) => {
+      child.on('error', async (spawnError) => {
         if (!isSettled) {
           isSettled = true;
           clearTimeout(timer);
+          const completedAt = new Date();
           const durationMs = Date.now() - startTime;
+          const safeStderr = truncateOutput(spawnError.message);
+
           console.error('[TestForge] Worker process spawn error:', spawnError.message);
+
+          try {
+            runRecord.status = 'failed';
+            runRecord.completedAt = completedAt;
+            runRecord.durationMs = durationMs;
+            runRecord.exitCode = null;
+            runRecord.stdout = '';
+            runRecord.stderr = safeStderr;
+            runRecord.screenshotPath = null;
+            await safeSaveRun(runRecord);
+
+            await safeCreateRunResult({
+              run: runRecord._id,
+              status: 'failed',
+              exitCode: null,
+              stdout: '',
+              stderr: safeStderr,
+              screenshotPath: null,
+              durationMs,
+              stepResults: [],
+            });
+          } catch (dbError) {
+            console.error('[TestForge] Failed to update spawn error Run record:', dbError.message);
+          }
+
           resolve({
             statusCode: 500,
             success: false,
@@ -158,10 +320,11 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
         }
       });
 
-      child.on('close', (code, signal) => {
+      child.on('close', async (code, signal) => {
         if (!isSettled) {
           isSettled = true;
           clearTimeout(timer);
+          const completedAt = new Date();
           const durationMs = Date.now() - startTime;
           const exitCode = code !== null ? code : 1;
           const isPassed = exitCode === 0;
@@ -178,23 +341,49 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
           }
 
           const screenshotPath = parsedResult?.screenshotPath || null;
+          const safeStdout = truncateOutput(stdout.trim());
+          const safeStderr = truncateOutput(stderr.trim());
 
           console.log(`[TestForge] Execution completed: ${isPassed ? 'passed' : 'failed'} (Exit code: ${exitCode})`);
           if (screenshotPath) {
             console.log(`[TestForge] Failure screenshot saved: ${screenshotPath}`);
           }
 
+          try {
+            runRecord.status = isPassed ? 'passed' : 'failed';
+            runRecord.completedAt = completedAt;
+            runRecord.durationMs = durationMs;
+            runRecord.exitCode = exitCode;
+            runRecord.stdout = safeStdout;
+            runRecord.stderr = safeStderr;
+            runRecord.screenshotPath = screenshotPath;
+            await safeSaveRun(runRecord);
+
+            await safeCreateRunResult({
+              run: runRecord._id,
+              status: isPassed ? 'passed' : 'failed',
+              exitCode,
+              stdout: safeStdout,
+              stderr: safeStderr,
+              screenshotPath,
+              durationMs,
+              stepResults: [],
+            });
+          } catch (dbError) {
+            console.error('[TestForge] Failed to persist execution Run/RunResult:', dbError.message);
+          }
+
           resolve({
             statusCode: 200,
             success: isPassed,
             data: {
+              runId,
               status: isPassed ? 'passed' : 'failed',
               exitCode,
               ...(signal ? { signal } : {}),
-              stdout: stdout.trim(),
-              stderr: stderr.trim(),
+              stdout: safeStdout,
+              stderr: safeStderr,
               durationMs,
-              runId,
               screenshotPath,
             },
           });
@@ -202,7 +391,7 @@ export const runTestCaseExecution = async ({ testCase, environment }) => {
       });
     });
   } finally {
-    // 6. Cleanup temporary spec file
+    // 7. Cleanup temporary spec file
     if (fs.existsSync(tempFilePath)) {
       try {
         fs.unlinkSync(tempFilePath);

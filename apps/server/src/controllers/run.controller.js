@@ -63,7 +63,7 @@ export const executeRun = async (req, res, next) => {
     }
 
     // 4. Delegate execution to service
-    const executionResult = await runTestCaseExecution({ testCase, environment });
+    const executionResult = await runTestCaseExecution({ testCase, environment, user: req.user });
 
     // Handle 400 validation failures from service
     if (executionResult.statusCode === 400) {
