@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import mongoose from 'mongoose';
 import { runTestCaseExecution } from '../src/services/execution.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -210,6 +211,112 @@ describe('Day 12 — Execution Service (apps/server)', () => {
 
       assert.equal(truncated.length, 50000 + '\n[Output truncated at 50000 characters]'.length);
       assert.ok(truncated.endsWith('[Output truncated at 50000 characters]'));
+    });
+  });
+
+  describe('Day 15 — GET /api/runs/:id Endpoint', () => {
+    const createMockRes = () => {
+      const res = {};
+      res.statusCode = 200;
+      res.jsonData = null;
+      res.status = function (code) {
+        res.statusCode = code;
+        return res;
+      };
+      res.json = function (data) {
+        res.jsonData = data;
+        return res;
+      };
+      return res;
+    };
+
+    const userId = new mongoose.Types.ObjectId();
+    const otherUserId = new mongoose.Types.ObjectId();
+    const runId = new mongoose.Types.ObjectId();
+
+    test('Returns 404 when run ID has invalid ObjectId format', async () => {
+      const { getRunById } = await import('../src/controllers/run.controller.js');
+      const req = { params: { id: 'invalid-run-id-format' }, user: { _id: userId } };
+      const res = createMockRes();
+
+      await getRunById(req, res, () => {});
+
+      assert.equal(res.statusCode, 404);
+      assert.equal(res.jsonData.success, false);
+      assert.equal(res.jsonData.message, 'Run not found');
+    });
+
+    test('Returns 404 when run does not exist in DB', async () => {
+      const { getRunById } = await import('../src/controllers/run.controller.js');
+      const Run = (await import('../src/models/Run.js')).default;
+      const originalFindById = Run.findById;
+      Run.findById = async () => null;
+
+      try {
+        const req = { params: { id: runId.toString() }, user: { _id: userId } };
+        const res = createMockRes();
+
+        await getRunById(req, res, () => {});
+
+        assert.equal(res.statusCode, 404);
+        assert.equal(res.jsonData.success, false);
+        assert.equal(res.jsonData.message, 'Run not found');
+      } finally {
+        Run.findById = originalFindById;
+      }
+    });
+
+    test('Returns 403 when run is owned by another user', async () => {
+      const { getRunById } = await import('../src/controllers/run.controller.js');
+      const Run = (await import('../src/models/Run.js')).default;
+      const originalFindById = Run.findById;
+      Run.findById = async () => ({
+        _id: runId,
+        user: otherUserId,
+      });
+
+      try {
+        const req = { params: { id: runId.toString() }, user: { _id: userId } };
+        const res = createMockRes();
+
+        await getRunById(req, res, () => {});
+
+        assert.equal(res.statusCode, 403);
+        assert.equal(res.jsonData.success, false);
+        assert.equal(res.jsonData.message, 'Access forbidden: You do not own this run');
+      } finally {
+        Run.findById = originalFindById;
+      }
+    });
+
+    test('Returns 200 with run and result data when owned by authenticated user', async () => {
+      const { getRunById } = await import('../src/controllers/run.controller.js');
+      const Run = (await import('../src/models/Run.js')).default;
+      const RunResult = (await import('../src/models/RunResult.js')).default;
+
+      const mockRun = { _id: runId, user: userId, status: 'passed' };
+      const mockResult = { _id: new mongoose.Types.ObjectId(), run: runId, status: 'passed', exitCode: 0 };
+
+      const originalFindById = Run.findById;
+      const originalFindOne = RunResult.findOne;
+
+      Run.findById = async () => mockRun;
+      RunResult.findOne = async () => mockResult;
+
+      try {
+        const req = { params: { id: runId.toString() }, user: { _id: userId } };
+        const res = createMockRes();
+
+        await getRunById(req, res, () => {});
+
+        assert.equal(res.statusCode, 200);
+        assert.equal(res.jsonData.success, true);
+        assert.deepEqual(res.jsonData.data.run, mockRun);
+        assert.deepEqual(res.jsonData.data.result, mockResult);
+      } finally {
+        Run.findById = originalFindById;
+        RunResult.findOne = originalFindOne;
+      }
     });
   });
 });

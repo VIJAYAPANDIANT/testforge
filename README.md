@@ -27,6 +27,7 @@ Playwright Worker (apps/worker)
 ✅ Day 12 — POST /api/runs Server Worker Integration completed
 ✅ Day 13 — Automatic Failure Screenshot Capture & Static URL Serving completed
 ✅ Day 14 — MongoDB Persistence for Test Execution (Run & RunResult models) completed
+✅ Day 15 — Finalize Test Execution API (GET /api/runs/:id endpoint & user authorization) completed
 ```
 
 ## Test Workflow DSL & Code Generation Engine
@@ -36,7 +37,7 @@ TestForge converts visual test workflows defined in JSON DSL into complete, runn
 - **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
 - **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)).
 - **Execution Worker**: Implemented in `@testforge/worker` (doc in [`apps/worker/README.md`](file:///c:/testforge/testforge/apps/worker/README.md)).
-- **Server Execution API**: Exposed via `POST /api/runs` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, persists `Run` (`queued` → `running` → `passed`/`failed`) and `RunResult` records in MongoDB, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, captures failure screenshots automatically, serves them statically via `/uploads`, and returns structured execution results (`runId`, `status`, `exitCode`, `stdout`, `stderr`, `durationMs`, `screenshotPath`).
+- **Server Execution API**: Exposed via `POST /api/runs` and `GET /api/runs/:id` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, persists `Run` (`queued` → `running` → `passed`/`failed`) and `RunResult` records in MongoDB, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, captures failure screenshots automatically, serves them statically via `/uploads`, and returns structured execution results (`runId`, `status`, `exitCode`, `stdout`, `stderr`, `durationMs`, `screenshotPath`).
 
 Supported step types:
 - **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}` mapped to environment `baseUrl`)
@@ -57,7 +58,7 @@ Supported step types:
 | Full `.spec.ts` Test File Code Generator | ✅ Completed (Week 2 Day 9) |
 | Locator Strategies, Validation & Fallback Locators | ✅ Completed (Week 2 Day 10) |
 | Standalone Playwright Execution Worker | ✅ Completed (Week 3 Day 11) |
-| Server Execution Integration (`POST /api/runs`) | ✅ Completed (Week 3 Day 12) |
+| Server Execution Integration (`POST` & `GET /api/runs`) | ✅ Completed (Week 3 Days 12-15) |
 | Automatic Failure Screenshot Capture & Static Serving | ✅ Completed (Week 3 Day 13) |
 | MongoDB Persistence (`Run` & `RunResult` models) | ✅ Completed (Week 3 Day 14) |
 | React Visual Test Builder UI | ⏳ Coming Week 3 (`apps/client`) |
@@ -101,11 +102,12 @@ testforge/
 
 ## API Endpoints
 
-### Test Execution API (Day 12–14)
+### Test Execution API (Day 12–15)
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|:---:|---|
 | `POST` | `/api/runs` | ✅ Bearer | Execute test case, persist Run/RunResult in MongoDB, capture failure screenshots |
+| `GET` | `/api/runs/:id` | ✅ Bearer | Fetch detailed execution run metadata (`Run`) and outcome (`RunResult`) by ID |
 | `GET` | `/uploads/*` | ❌ | Access captured failure screenshot PNG images |
 
 **Request Body**:

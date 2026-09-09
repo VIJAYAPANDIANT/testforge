@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import TestCase from '../models/TestCase.js';
 import Environment from '../models/Environment.js';
+import Run from '../models/Run.js';
+import RunResult from '../models/RunResult.js';
 import { runTestCaseExecution } from '../services/execution.service.js';
 
 /**
@@ -87,6 +89,53 @@ export const executeRun = async (req, res, next) => {
     return res.status(200).json({
       success: executionResult.success,
       data: executionResult.data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/runs/:id
+ * Fetches execution run details and associated run result by ID.
+ * Requires JWT authentication.
+ * Verifies that the run belongs to the authenticated user.
+ */
+export const getRunById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Run not found',
+      });
+    }
+
+    const run = await Run.findById(id);
+    if (!run) {
+      return res.status(404).json({
+        success: false,
+        message: 'Run not found',
+      });
+    }
+
+    // Ownership check: verify run.user matches req.user._id
+    if (run.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access forbidden: You do not own this run',
+      });
+    }
+
+    const result = await RunResult.findOne({ run: run._id });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        run,
+        result: result || null,
+      },
     });
   } catch (error) {
     next(error);
