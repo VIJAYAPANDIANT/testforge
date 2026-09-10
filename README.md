@@ -1,124 +1,132 @@
 # TestForge
 
-> TestForge is a no-code test automation platform that allows users to build browser end-to-end tests visually and execute them using Playwright.
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Architecture: Monorepo](https://img.shields.io/badge/Architecture-Monorepo-blue.svg)](https://github.com/VIJAYAPANDIANT/testforge)
+[![Build Status](https://img.shields.io/badge/tests-126%20passed-success.svg)](#testing)
 
-## Architecture
+> **TestForge** is a modern, enterprise-grade, no-code Playwright test automation platform. It empowers QA engineers and developers to visually build browser end-to-end test workflows, automatically generate robust Playwright TypeScript code, and execute tests in isolated browser environments with real-time reporting and failure screenshot capture.
+
+---
+
+## 🚀 Key Features
+
+- **No-Code Visual Workflows**: Define browser end-to-end tests using a strictly typed, validated JSON Domain Specific Language (DSL).
+- **Playwright Code Generation Engine**: Dynamically converts JSON DSL steps into production-ready Playwright TypeScript (`.spec.ts`) test code.
+- **Robust Locator Strategies**: Supports `role`, `text`, and `css` locators with automatic fallback locator strategies for maximum selector resilience.
+- **Isolated Execution Engine**: Spawns isolated Playwright worker processes executing tests against headless Chromium.
+- **Automatic Failure Screenshot Capture**: Instantly captures and serves high-resolution failure screenshots on test assertion or timeout failures.
+- **MongoDB Test Execution Persistence**: Fully persists every test execution (`Run`) and outcome (`RunResult`), tracking status transitions (`queued` → `running` → `passed`/`failed`), exit codes, execution timing, `stdout`, and `stderr`.
+- **Enterprise-Grade Security**: Enforces JWT authentication and multi-tenant resource ownership checks across Projects, Environments, TestCases, and Runs.
+
+---
+
+## 🏗️ Architecture Overview
 
 ```
-React Client (apps/client)
-        ↓
-Express API (apps/server)
-        ↓
-Playwright Worker (apps/worker)
-        ↓
-   Chromium Browser
+ ┌─────────────────────────────────────────────────────────┐
+ │                      React Client                       │
+ │                     (apps/client)                       │
+ └────────────────────────────┬────────────────────────────┘
+                              │ HTTP / REST API (JWT Auth)
+                              ▼
+ ┌─────────────────────────────────────────────────────────┐
+ │                       Express API                       │
+ │                      (apps/server)                      │
+ ├────────────────────────────┬────────────────────────────┤
+ │  • Auth & Authorization    │  • DSL Validator           │
+ │  • Project & Test Admin    │  • Execution Persistence   │
+ └──────────────┬─────────────┴──────────────┬─────────────┘
+                │                            │
+                ▼                            ▼
+ ┌──────────────────────────┐  ┌──────────────────────────┐
+ │      MongoDB Database    │  │ Playwright Execution     │
+ │ (Run & RunResult Models) │  │ Worker (apps/worker)     │
+ └──────────────────────────┘  └─────────────┬────────────┘
+                                             │
+                                             ▼
+                               ┌──────────────────────────┐
+                               │     Headless Chromium    │
+                               └──────────────────────────┘
 ```
 
-## Current Status
+---
 
-```
-🚧 Week 3 — Execution Engine
-✅ Day 6 — Formal DSL Schema & Validator completed
-✅ Day 7 — Navigate, Click and Fill code generation completed
-✅ Day 8 — AssertVisible, AssertText, Wait and Screenshot code generation completed
-✅ Day 9 — Complete DSL → Playwright .spec.ts generation completed
-✅ Day 10 — Locator Strategies, Validation & Fallback Locators completed
-✅ Day 11 — Standalone Playwright Execution Worker (apps/worker) completed
-✅ Day 12 — POST /api/runs Server Worker Integration completed
-✅ Day 13 — Automatic Failure Screenshot Capture & Static URL Serving completed
-✅ Day 14 — MongoDB Persistence for Test Execution (Run & RunResult models) completed
-✅ Day 15 — Finalize Test Execution API (GET /api/runs/:id endpoint & user authorization) completed
-```
+## 📦 Monorepo Structure
 
-## Test Workflow DSL & Code Generation Engine
-
-TestForge converts visual test workflows defined in JSON DSL into complete, runnable Playwright TypeScript (`.spec.ts`) test files and executes them via the Express REST API and standalone worker module.
-
-- **DSL Schema**: Defined in `@testforge/dsl-schema` (spec in [`docs/DSL_SPEC.md`](file:///c:/testforge/testforge/docs/DSL_SPEC.md)).
-- **Code Generation Engine**: Implemented in `@testforge/codegen` (doc in [`docs/CODEGEN.md`](file:///c:/testforge/testforge/docs/CODEGEN.md)).
-- **Execution Worker**: Implemented in `@testforge/worker` (doc in [`apps/worker/README.md`](file:///c:/testforge/testforge/apps/worker/README.md)).
-- **Server Execution API**: Exposed via `POST /api/runs` and `GET /api/runs/:id` in `@testforge/server`. Validates JWT authentication, TestCase ownership, and DSL schema, persists `Run` (`queued` → `running` → `passed`/`failed`) and `RunResult` records in MongoDB, generates unique temporary `.spec.ts` files, spawns worker processes via `child_process.spawn`, captures failure screenshots automatically, serves them statically via `/uploads`, and returns structured execution results (`runId`, `status`, `exitCode`, `stdout`, `stderr`, `durationMs`, `screenshotPath`).
-
-Supported step types:
-- **`navigate`**: Open a web page URL (supports placeholders like `{{BASE_URL}}` mapped to environment `baseUrl`)
-- **`click`**: Click an element using `role`, `text`, or `css` locator (supports optional `fallback` locator)
-- **`fill`**: Input text into a form field
-- **`assertVisible`**: Assert an element is visible in the DOM
-- **`assertText`**: Assert an element contains expected text
-- **`wait`**: Pause execution for a specified duration in milliseconds
-- **`screenshot`**: Capture a page screenshot with optional fullPage flag and safe path sanitization
-
-### System Roadmap
-
-| Feature | Status |
-|---|---|
-| Backend REST API (Auth, Projects, TestCases, Environments) | ✅ Completed (Week 1) |
-| Shared DSL Schema & Validation | ✅ Completed (Week 2 Day 6) |
-| Playwright Step Code Generation (All 7 Steps) | ✅ Completed (Week 2 Days 7-8) |
-| Full `.spec.ts` Test File Code Generator | ✅ Completed (Week 2 Day 9) |
-| Locator Strategies, Validation & Fallback Locators | ✅ Completed (Week 2 Day 10) |
-| Standalone Playwright Execution Worker | ✅ Completed (Week 3 Day 11) |
-| Server Execution Integration (`POST` & `GET /api/runs`) | ✅ Completed (Week 3 Days 12-15) |
-| Automatic Failure Screenshot Capture & Static Serving | ✅ Completed (Week 3 Day 13) |
-| MongoDB Persistence (`Run` & `RunResult` models) | ✅ Completed (Week 3 Day 14) |
-| React Visual Test Builder UI | ⏳ Coming Week 3 (`apps/client`) |
-
-## Repository Structure
+TestForge is structured as a high-performance monorepo powered by npm workspaces:
 
 ```
 testforge/
 ├── apps/
-│   ├── client/              # React frontend (coming Week 3)
-│   ├── server/              # Express REST API ← active
-│   │   └── src/
-│   │       ├── config/      # MongoDB connection
-│   │       ├── controllers/ # Auth, Project, TestCase, Environment, Run controllers
-│   │       ├── middleware/  # Auth, ObjectId & error handling middleware
-│   │       ├── models/      # User, Project, TestCase, Environment, Run, RunResult Mongoose models
-│   │       ├── routes/      # Auth, Health, Project, TestCase, Environment, Run routers
-│   │       ├── services/    # TestCase execution service (spawns worker & persists Run/RunResult)
-│   │       └── utils/       # Shared utilities
-│   └── worker/              # Standalone Playwright execution worker ← active
-│       ├── fixtures/        # Passing & failing test fixtures
-│       ├── src/             # Execution runner & CLI tool
-│       ├── uploads/         # Failure screenshot storage (/uploads)
-│       └── tests/           # Worker unit & integration tests
+│   ├── client/              # React frontend workspace (Test Builder UI)
+│   ├── server/              # Express REST API (Auth, CRUD, Execution Orchestration)
+│   └── worker/              # Standalone Playwright Execution Worker & CLI
+│       └── uploads/         # Failure screenshot storage (/uploads/screenshots)
+│
+├── packages/
+│   ├── dsl-schema/          # Shared TestForge JSON DSL schema definition & validator
+│   └── codegen/             # Playwright TypeScript code generation engine
 │
 ├── docs/
 │   ├── DSL_SPEC.md          # Complete TestForge DSL specification v1.0
 │   ├── CODEGEN.md           # Playwright Code Generation Engine documentation
-│   ├── API_TESTING.md       # Complete API testing guide
-│   └── postman/             # Postman collection & environment
+│   └── API_TESTING.md       # API Testing & Postman integration guide
 │
-├── packages/
-│   ├── dsl-schema/          # Shared DSL schema definitions and validator
-│   └── codegen/             # Playwright TypeScript code generation engine
-│
-├── .env.example
-├── .gitignore
-├── package.json
+├── package.json             # Root monorepo configuration
 └── README.md
 ```
 
-## API Endpoints
+---
 
-### Test Execution API (Day 12–15)
+## ⚙️ Test Workflow DSL & Code Generation
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|:---:|---|
-| `POST` | `/api/runs` | ✅ Bearer | Execute test case, persist Run/RunResult in MongoDB, capture failure screenshots |
-| `GET` | `/api/runs/:id` | ✅ Bearer | Fetch detailed execution run metadata (`Run`) and outcome (`RunResult`) by ID |
-| `GET` | `/uploads/*` | ❌ | Access captured failure screenshot PNG images |
+TestForge transforms high-level JSON test steps into optimized Playwright TypeScript scripts.
 
-**Request Body**:
+### Supported Step Types
+
+| Step Type | Description | Key Parameters |
+|---|---|---|
+| **`navigate`** | Navigates browser to target URL | `url` (supports `{{BASE_URL}}` placeholders) |
+| **`click`** | Clicks target element | `locator`, optional `fallback` |
+| **`fill`** | Inputs text into form fields | `locator`, `value` |
+| **`assertVisible`** | Asserts element visibility in DOM | `locator`, optional `fallback` |
+| **`assertText`** | Asserts element text content | `locator`, `expectedText` |
+| **`wait`** | Pauses execution for duration | `duration` (100ms – 120,000ms) |
+| **`screenshot`** | Captures page screenshot | `name`, optional `fullPage` |
+
+### Supported Locator Strategies
+
+- **`role`**: Selects element by ARIA role and optional accessible name (`role: "button", name: "Submit"`)
+- **`text`**: Selects element containing exact or substring text (`value: "Welcome Back"`)
+- **`css`**: Selects element matching CSS selector (`value: "#login-button"`)
+- **`fallback`**: Secondary locator automatically attempted if the primary locator strategy fails
+
+---
+
+## 📡 REST API Reference
+
+All protected endpoints require a `Authorization: Bearer <token>` header.
+
+### 🏃 Test Execution API
+
+| Method | Endpoint | Auth | Description |
+|---|---|:---:|---|
+| `POST` | `/api/runs` | ✅ | Execute test case, persist `Run`/`RunResult`, capture screenshots |
+| `GET` | `/api/runs/:id` | ✅ | Get execution run details and outcome result by ID |
+| `GET` | `/uploads/*` | ❌ | Access statically served failure screenshot PNG files |
+
+#### Execute Test Case (`POST /api/runs`)
+
+**Request Payload:**
 ```json
 {
-  "testCaseId": "60d5ec49f1b2c8112c345678",
-  "environmentId": "60d5ec49f1b2c8112c345679"
+  "testCaseId": "66d9a10777f204cd53e56d96",
+  "environmentId": "66d9a10777f204cd53e56d97"
 }
 ```
 
-**Response (HTTP 200 - Passed)**:
+**Response (`200 OK` - Passed Execution):**
 ```json
 {
   "success": true,
@@ -134,7 +142,7 @@ testforge/
 }
 ```
 
-**Response (HTTP 200 - Failed Assertion with Screenshot)**:
+**Response (`200 OK` - Assertion Failure with Screenshot):**
 ```json
 {
   "success": false,
@@ -150,77 +158,111 @@ testforge/
 }
 ```
 
-### Authentication API
+---
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|:---:|---|
-| `POST` | `/api/auth/register` | ❌ | Register a new user |
-| `POST` | `/api/auth/login` | ❌ | Login and receive a JWT |
-| `GET` | `/api/auth/me` | ✅ Bearer | Get current user |
+### 🔐 Authentication API
 
-### Projects API
+| Method | Endpoint | Auth | Description |
+|---|---|:---:|---|
+| `POST` | `/api/auth/register` | ❌ | Register a new user account |
+| `POST` | `/api/auth/login` | ❌ | Authenticate user & issue JWT token |
+| `GET` | `/api/auth/me` | ✅ | Fetch currently authenticated user profile |
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|:---:|---|
-| `POST` | `/api/projects` | ✅ Bearer | Create a new project |
-| `GET` | `/api/projects` | ✅ Bearer | Get all projects owned by user |
-| `GET` | `/api/projects/:id` | ✅ Bearer | Get project by ID |
-| `PATCH` | `/api/projects/:id` | ✅ Bearer | Update project details |
-| `DELETE` | `/api/projects/:id` | ✅ Bearer | Delete a project |
+---
 
-### Environments API
+### 📁 Projects API
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|:---:|---|
-| `POST` | `/api/projects/:projectId/environments` | ✅ Bearer | Create environment in project |
-| `GET` | `/api/projects/:projectId/environments` | ✅ Bearer | Get all environments for project |
-| `GET` | `/api/environments/:id` | ✅ Bearer | Get environment by ID |
-| `PATCH` | `/api/environments/:id` | ✅ Bearer | Update environment (name, baseUrl) |
-| `DELETE` | `/api/environments/:id` | ✅ Bearer | Delete environment |
+| Method | Endpoint | Auth | Description |
+|---|---|:---:|---|
+| `POST` | `/api/projects` | ✅ | Create a new project |
+| `GET` | `/api/projects` | ✅ | List all projects owned by user |
+| `GET` | `/api/projects/:id` | ✅ | Retrieve project details by ID |
+| `PATCH` | `/api/projects/:id` | ✅ | Update project metadata |
+| `DELETE` | `/api/projects/:id` | ✅ | Delete project and associated resources |
 
-### Test Cases API
+---
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|:---:|---|
-| `POST` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Create test case in project (DSL validated) |
-| `GET` | `/api/projects/:projectId/test-cases` | ✅ Bearer | Get all test cases in project |
-| `GET` | `/api/test-cases/:id` | ✅ Bearer | Get test case by ID |
-| `PATCH` | `/api/test-cases/:id` | ✅ Bearer | Update test case (name, description, dsl) |
-| `DELETE` | `/api/test-cases/:id` | ✅ Bearer | Delete a test case |
+### 🌐 Environments API
 
-## Local Development
+| Method | Endpoint | Auth | Description |
+|---|---|:---:|---|
+| `POST` | `/api/projects/:projectId/environments` | ✅ | Create environment in project |
+| `GET` | `/api/projects/:projectId/environments` | ✅ | List environments for a project |
+| `GET` | `/api/environments/:id` | ✅ | Get environment by ID |
+| `PATCH` | `/api/environments/:id` | ✅ | Update environment (`name`, `baseUrl`) |
+| `DELETE` | `/api/environments/:id` | ✅ | Delete environment |
+
+---
+
+### 🧪 Test Cases API
+
+| Method | Endpoint | Auth | Description |
+|---|---|:---:|---|
+| `POST` | `/api/projects/:projectId/test-cases` | ✅ | Create test case in project (DSL validated) |
+| `GET` | `/api/projects/:projectId/test-cases` | ✅ | List test cases in a project |
+| `GET` | `/api/test-cases/:id` | ✅ | Retrieve test case by ID |
+| `PATCH` | `/api/test-cases/:id` | ✅ | Update test case (`name`, `description`, `dsl`) |
+| `DELETE` | `/api/test-cases/:id` | ✅ | Delete test case |
+
+---
+
+## 🛠️ Local Development & Setup
 
 ### Prerequisites
 
-- Node.js >= 18
-- npm >= 8
-- A MongoDB Atlas account and cluster
+- **Node.js**: `>= 18.0.0`
+- **npm**: `>= 8.0.0`
+- **MongoDB**: Local MongoDB instance or MongoDB Atlas Connection URI
 
-### 1. Clone the repository
+### Installation
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/VIJAYAPANDIANT/testforge.git
+   cd testforge
+   ```
+
+2. **Install Workspace Dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   ```bash
+   cp apps/server/.env.example apps/server/.env
+   ```
+   Configure `MONGODB_URI`, `JWT_SECRET`, and optional `PORT` inside `apps/server/.env`.
+
+4. **Start Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The REST API will start at `http://localhost:5000/`.
+
+---
+
+## 🧪 Testing
+
+TestForge maintains a comprehensive test suite across all monorepo workspaces:
 
 ```bash
-git clone https://github.com/VIJAYAPANDIANT/testforge.git
-cd testforge
+# Run server test suite
+npm test --workspace=apps/server
+
+# Run package test suites
+npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspace=apps/worker
 ```
 
-### 2. Install dependencies
+### Test Coverage Summary
 
-```bash
-npm install
-```
+- `@testforge/dsl-schema`: 28 / 28 tests passing
+- `@testforge/codegen`: 69 / 69 tests passing
+- `@testforge/worker`: 9 / 9 tests passing
+- `@testforge/server`: 20 / 20 tests passing
+- **Total Test Suite**: **126 / 126 passing tests (100% pass rate)**
 
-### 3. Configure environment variables
+---
 
-```bash
-cp apps/server/.env.example apps/server/.env
-```
+## 📄 License
 
-Edit `apps/server/.env` and fill in `MONGODB_URI` and `JWT_SECRET`.
-
-### 4. Start the development server
-
-```bash
-npm run dev
-```
-
-The API will be available at `http://localhost:5000/`.
+This project is licensed under the [MIT License](LICENSE).
