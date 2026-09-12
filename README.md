@@ -21,34 +21,60 @@
 
 ---
 
-## 🏗️ Architecture Overview
+## 🏛️ System Architecture & Data Flow
+
+```mermaid
+graph TD
+    A["Visual Test Workflow / JSON DSL Input"] --> B["TestForge Orchestration Engine (apps/server)"]
+    B --> C["Shared DSL Validator & Playwright Codegen Engine<br/>(@testforge/dsl-schema & @testforge/codegen)"]
+    
+    C --> D1["Generate Playwright<br/>.spec.ts Code"]
+    C --> D2["Spawn Worker Process<br/>(@testforge/worker)"]
+    C --> D3["Execute Headless<br/>Chromium Automation"]
+    C --> D4["Capture Failure Screenshots<br/>(/uploads/screenshots)"]
+    
+    D1 --> E["MongoDB Persistence Engine<br/>(Run & RunResult Documents)"]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+```
+
+<details>
+<summary><b>Click to expand ASCII Architecture Diagram</b></summary>
 
 ```
- ┌─────────────────────────────────────────────────────────┐
- │                      React Client                       │
- │                     (apps/client)                       │
- └────────────────────────────┬────────────────────────────┘
-                              │ HTTP / REST API (JWT Auth)
-                              ▼
- ┌─────────────────────────────────────────────────────────┐
- │                       Express API                       │
- │                      (apps/server)                      │
- ├────────────────────────────┬────────────────────────────┤
- │  • Auth & Authorization    │  • DSL Validator           │
- │  • Project & Test Admin    │  • Execution Persistence   │
- └──────────────┬─────────────┴──────────────┬─────────────┘
-                │                            │
-                ▼                            ▼
- ┌──────────────────────────┐  ┌──────────────────────────┐
- │      MongoDB Database    │  │ Playwright Execution     │
- │ (Run & RunResult Models) │  │ Worker (apps/worker)     │
- └──────────────────────────┘  └─────────────┬────────────┘
-                                             │
-                                             ▼
-                               ┌──────────────────────────┐
-                               │     Headless Chromium    │
-                               └──────────────────────────┘
+                  ┌─────────────────────────────────────────────────┐
+                  │     Visual Test Workflow / JSON DSL Input       │
+                  └────────────────────────┬────────────────────────┘
+                                           │
+                                           ▼
+                  ┌─────────────────────────────────────────────────┐
+                  │   TestForge Orchestration Engine (apps/server)  │
+                  └────────────────────────┬────────────────────────┘
+                                           │
+                                           ▼
+                  ┌─────────────────────────────────────────────────┐
+                  │ Shared DSL Validator & Playwright Codegen Engine│
+                  │   (@testforge/dsl-schema & @testforge/codegen)  │
+                  └────────────────────────┬────────────────────────┘
+                                           │
+         ┌───────────────────┬─────────────┴─────────────┬───────────────────┐
+         │                   │                           │                   │
+         ▼                   ▼                           ▼                   ▼
+┌──────────────────┐┌──────────────────┐       ┌──────────────────┐┌──────────────────┐
+│Generate Playwright││Spawn Worker      │       │Execute Headless  ││Capture Failure   │
+│   .spec.ts Code  ││   Process        │       │Chromium Automation││   Screenshots    │
+└────────┬─────────┘└────────┬─────────┘       └────────┬─────────┘└────────┬─────────┘
+         │                   │                           │                   │
+         └───────────────────┴─────────────┬─────────────┴───────────────────┘
+                                           │
+                                           ▼
+                  ┌─────────────────────────────────────────────────┐
+                  │           MongoDB Persistence Engine            │
+                  │          (Run & RunResult Documents)            │
+                  └─────────────────────────────────────────────────┘
 ```
+</details>
 
 ---
 
