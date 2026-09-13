@@ -259,19 +259,25 @@ All protected endpoints require a `Authorization: Bearer <token>` header.
    ```
    Configure `MONGODB_URI`, `JWT_SECRET`, and optional `PORT` inside `apps/server/.env`.
 
-4. **Start Development Server:**
+4. **Start Development Servers:**
    ```bash
-   npm run dev
+   # Start backend API (http://localhost:5000)
+   npm run dev:server
+
+   # Start frontend React client (http://localhost:5173)
+   npm run dev:client
    ```
-   The REST API will start at `http://localhost:5000/`.
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing & Build Verification
 
 TestForge maintains a comprehensive test suite across all monorepo workspaces:
 
 ```bash
+# Build React frontend application
+npm run build --workspace=apps/client
+
 # Run server test suite
 npm test --workspace=apps/server
 
@@ -281,6 +287,7 @@ npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspac
 
 ### Test Coverage Summary
 
+- `@testforge/client`: React 18 + Vite + TypeScript build passing (0 errors)
 - `@testforge/dsl-schema`: 28 / 28 tests passing
 - `@testforge/codegen`: 69 / 69 tests passing
 - `@testforge/worker`: 9 / 9 tests passing
