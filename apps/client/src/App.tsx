@@ -7,26 +7,28 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
-import { TestCasesPage } from './pages/TestCasesPage';
+import { ProjectDetailPage } from './pages/ProjectDetailPage';
+import { TestCaseDetailPage } from './pages/TestCaseDetailPage';
 
 export const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public Authentication Routes (redirect to /dashboard if logged in) */}
+          {/* Public Authentication Routes */}
           <Route element={<PublicOnlyRoute />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
           </Route>
 
-          {/* Protected Application Routes (redirect to /login if unauthenticated) */}
+          {/* Protected Application Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/projects/:projectId" element={<Navigate to="test-cases" replace />} />
-              <Route path="/projects/:projectId/test-cases" element={<TestCasesPage />} />
+              <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+              <Route path="/projects/:projectId/test-cases" element={<ProjectDetailPage />} />
+              <Route path="/projects/:projectId/test-cases/:testCaseId" element={<TestCaseDetailPage />} />
             </Route>
           </Route>
 

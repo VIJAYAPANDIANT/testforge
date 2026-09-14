@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { projectService } from '../services/projectService';
 import { Project } from '../types';
-import { FolderGit2, Plus, ArrowRight, Loader2, AlertCircle, X } from 'lucide-react';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { FolderGit2, Plus, ArrowRight, Loader2, AlertCircle, X, Edit2, Trash2 } from 'lucide-react';
 
 export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal State
+  // Create/Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Delete Confirmation State
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const navigate = useNavigate();
 
   const fetchProjects = async () => {
     try {
@@ -33,7 +41,31 @@ export const ProjectsPage: React.FC = () => {
     fetchProjects();
   }, []);
 
-  const handleCreateProject = async (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setEditingProject(null);
+    setName('');
+    setDescription('');
+    setModalError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setEditingProject(project);
+    setName(project.name);
+    setDescription(project.description || '');
+    setModalError(null);
+    setIsModalOpen(true);
+  };
+
+  const openDeleteModal = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDeletingProject(project);
+  };
+
+  const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
 
@@ -44,15 +76,41 @@ export const ProjectsPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const newProject = await projectService.createProject(name.trim(), description.trim());
-      setProjects((prev) => [newProject, ...prev]);
+      if (editingProject) {
+        const updated = await projectService.updateProject(
+          editingProject.id,
+          name.trim(),
+          description.trim()
+        );
+        setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      } else {
+        const newProject = await projectService.createProject(name.trim(), description.trim());
+        setProjects((prev) => [newProject, ...prev]);
+      }
       setIsModalOpen(false);
       setName('');
       setDescription('');
+      setEditingProject(null);
     } catch (err: any) {
-      setModalError(err.message || 'Failed to create project.');
+      setModalError(err.message || 'Failed to save project.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!deletingProject) return;
+
+    try {
+      setIsDeleting(true);
+      await projectService.deleteProject(deletingProject.id);
+      setProjects((prev) => prev.filter((p) => p.id !== deletingProject.id));
+      setDeletingProject(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete project.');
+      setDeletingProject(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -62,11 +120,11 @@ export const ProjectsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">Projects</h1>
-          <p className="text-sm text-slate-400">Manage test automation repositories and workflows</p>
+          <p className="text-sm text-slate-400">Manage your test automation projects.</p>
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openCreateModal}
           className="btn-primary flex items-center space-x-2 text-sm shadow-lg shadow-blue-600/20"
         >
           <Plus className="w-4 h-4" />
@@ -92,9 +150,9 @@ export const ProjectsPage: React.FC = () => {
           </div>
           <div className="space-y-1">
             <h3 className="text-base font-semibold text-slate-200">No projects yet</h3>
-            <p className="text-sm text-slate-400">Create your first project to start building tests.</p>
+            <p className="text-sm text-slate-400">Create your first project to start automating tests.</p>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="btn-primary text-sm">
+          <button onClick={openCreateModal} className="btn-primary text-sm">
             <Plus className="w-4 h-4" />
             <span>Create Project</span>
           </button>
@@ -102,10 +160,10 @@ export const ProjectsPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {projects.map((project) => (
-            <Link
+            <div
               key={project.id}
-              to={`/projects/${project.id}/test-cases`}
-              className="card hover:border-blue-500/50 transition-all duration-200 space-y-3 group"
+              onClick={() => navigate(`/projects/${project.id}`)}
+              className="card hover:border-blue-500/50 transition-all duration-200 space-y-3 group cursor-pointer relative"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -116,7 +174,24 @@ export const ProjectsPage: React.FC = () => {
                     {project.name}
                   </h2>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
+
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={(e) => openEditModal(e, project)}
+                    className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors"
+                    title="Edit Project"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => openDeleteModal(e, project)}
+                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-md transition-colors"
+                    title="Delete Project"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors ml-1" />
+                </div>
               </div>
 
               <p className="text-xs text-slate-400 line-clamp-2 pl-12">
@@ -125,19 +200,21 @@ export const ProjectsPage: React.FC = () => {
 
               <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-slate-800/80 pl-12">
                 <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
-                <span className="text-blue-400 group-hover:underline">View Test Cases &rarr;</span>
+                <span className="text-blue-400 group-hover:underline">Open Project &rarr;</span>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Create Project Modal */}
+      {/* Create / Edit Project Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-[#111827] border border-slate-800 rounded-xl p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-slate-100">Create New Project</h3>
+              <h3 className="text-lg font-bold text-slate-100">
+                {editingProject ? 'Edit Project' : 'Create New Project'}
+              </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-slate-400 hover:text-slate-200 transition-colors"
@@ -152,7 +229,7 @@ export const ProjectsPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleCreateProject} className="space-y-4">
+            <form onSubmit={handleSaveProject} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                   Project Name *
@@ -161,7 +238,7 @@ export const ProjectsPage: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. E-Commerce Web App"
+                  placeholder="e.g. TestForge Web App"
                   required
                   className="input-field"
                 />
@@ -174,7 +251,7 @@ export const ProjectsPage: React.FC = () => {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description of tests in this project..."
+                  placeholder="Automated regression test scenarios..."
                   rows={3}
                   className="input-field resize-none"
                 />
@@ -194,13 +271,26 @@ export const ProjectsPage: React.FC = () => {
                   className="btn-primary text-xs"
                 >
                   {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Create Project</span>
+                  <span>{editingProject ? 'Save Changes' : 'Create Project'}</span>
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deletingProject}
+        title="Delete Project?"
+        message={`Are you sure you want to delete "${deletingProject?.name}"? This action cannot be undone.`}
+        confirmText="Delete Project"
+        cancelText="Cancel"
+        isDanger={true}
+        isLoading={isDeleting}
+        onConfirm={handleDeleteProject}
+        onClose={() => setDeletingProject(null)}
+      />
     </div>
   );
 };
