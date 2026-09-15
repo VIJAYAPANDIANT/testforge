@@ -124,3 +124,46 @@ export interface ApiResponse<T = any> {
   data?: T;
   errors?: string[] | any[];
 }
+
+// ─── Day 19 Execution & Socket Types ─────────────────────────────────────────
+
+export type RunStatus = 'idle' | 'queued' | 'running' | 'passed' | 'failed';
+
+export type StepExecutionStatus = 'pending' | 'running' | 'passed' | 'failed';
+
+export interface StepExecutionState {
+  stepIndex: number;
+  stepType: StepType;
+  status: StepExecutionStatus;
+  error?: string;
+  durationMs?: number;
+}
+
+export interface LiveRunState {
+  runId: string | null;
+  status: RunStatus;
+  startedAt?: string;
+  completedAt?: string;
+  durationMs?: number;
+  error?: string;
+  screenshotPath?: string | null;
+  steps: StepExecutionState[];
+}
+
+export interface SocketStepEventPayload {
+  runId: string;
+  stepIndex: number;
+  stepType: StepType;
+  status: StepExecutionStatus;
+  error?: string;
+}
+
+export interface SocketRunEventPayload {
+  runId: string;
+  status: RunStatus;
+  startedAt?: string;
+  completedAt?: string;
+  durationMs?: number;
+  error?: string;
+  screenshotPath?: string | null;
+}

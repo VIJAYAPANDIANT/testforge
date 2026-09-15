@@ -4,10 +4,11 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { validateTestDsl } from '@testforge/dsl-schema';
-import { dslToPlaywrightScript } from '@testforge/codegen';
+import { dslToPlaywrightScript, generateStep, toTsString } from '@testforge/codegen';
 import mongoose from 'mongoose';
 import Run from '../models/Run.js';
 import RunResult from '../models/RunResult.js';
+import { emitRunEvent, SOCKET_EVENTS } from '../socket/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,39 @@ export const truncateOutput = (text, maxLength = MAX_RUN_OUTPUT_LENGTH) => {
   if (!text || typeof text !== 'string') return '';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + `\n[Output truncated at ${maxLength} characters]`;
+};
+
+/**
+ * Builds an instrumented Playwright script that logs machine-readable step execution events.
+ *
+ * @param {object} validDsl - Validated DSL object
+ * @returns {string} Instrumented Playwright spec file string
+ */
+export const buildInstrumentedPlaywrightScript = (validDsl) => {
+  const testNameStr = toTsString(validDsl.name);
+
+  const stepBlocks = (validDsl.steps || [])
+    .map((step, index) => {
+      const rawStepCode = generateStep(step);
+      const stepTypeStr = JSON.stringify(step.type);
+
+      return `  console.log("TESTFORGE_STEP_START:" + JSON.stringify({ stepIndex: ${index}, stepType: ${stepTypeStr} }));
+  try {
+    ${rawStepCode}
+    console.log("TESTFORGE_STEP_PASS:" + JSON.stringify({ stepIndex: ${index}, stepType: ${stepTypeStr} }));
+  } catch (err) {
+    console.log("TESTFORGE_STEP_FAIL:" + JSON.stringify({ stepIndex: ${index}, stepType: ${stepTypeStr}, error: err.message || String(err) }));
+    throw err;
+  }`;
+    })
+    .join('\n\n');
+
+  return `import { test, expect } from "@playwright/test";
+
+test(${testNameStr}, async ({ page }) => {
+${stepBlocks}
+});
+`;
 };
 
 /**
@@ -62,8 +96,8 @@ const safeCreateRunResult = async (payload) => {
 
 /**
  * Executes a TestCase DSL by generating a temporary Playwright .spec.ts file,
- * persisting execution records in MongoDB (Run & RunResult), and spawning
- * the standalone worker process.
+ * persisting execution records in MongoDB (Run & RunResult), emitting live Socket.IO events,
+ * and spawning the standalone worker process.
  *
  * @param {object} params
  * @param {object} params.testCase - Mongoose TestCase document or object
@@ -91,9 +125,9 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
     };
   }
 
-  // 2. Resolve BASE_URL
+  // 2. Resolve BASE_URL & Generate Instrumented Playwright Script
   const baseUrl = environment?.baseUrl || process.env.BASE_URL;
-  const scriptContent = dslToPlaywrightScript(dslValidation.data);
+  const scriptContent = buildInstrumentedPlaywrightScript(dslValidation.data);
 
   const requiresBaseUrl = scriptContent.includes('process.env.BASE_URL') || scriptContent.includes('{{BASE_URL}}');
   if (requiresBaseUrl && !baseUrl) {
@@ -146,6 +180,12 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
 
   const runId = runRecord._id.toString();
 
+  // Emit RUN_QUEUED event immediately
+  emitRunEvent(runId, SOCKET_EVENTS.RUN_QUEUED, {
+    runId,
+    status: 'queued',
+  });
+
   // 4. Create unique temporary file inside workspace scratch directory
   const repoRoot = getRepoRoot();
   const tempDir = path.resolve(repoRoot, 'scratch/testforge-runs');
@@ -174,6 +214,13 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
         stderr: 'Worker CLI script not found',
       });
 
+      emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+        runId,
+        status: 'failed',
+        error: 'Worker CLI script not found',
+        completedAt: completedAt.toISOString(),
+      });
+
       return {
         statusCode: 500,
         success: false,
@@ -189,6 +236,13 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
     runRecord.startedAt = startedAt;
     await safeSaveRun(runRecord);
 
+    // Emit RUN_STARTED event
+    emitRunEvent(runId, SOCKET_EVENTS.RUN_STARTED, {
+      runId,
+      status: 'running',
+      startedAt: startedAt.toISOString(),
+    });
+
     const timeoutMs = parseInt(process.env.TEST_EXECUTION_TIMEOUT_MS, 10) || 60000;
 
     console.log(`[TestForge] Starting test execution for TestCase: ${testCase._id || testCase.id} (Run: ${runId})`);
@@ -197,6 +251,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
       let stdout = '';
       let stderr = '';
       let isSettled = false;
+      let stdoutLineBuffer = '';
 
       const childEnv = {
         ...process.env,
@@ -252,6 +307,15 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
             console.error('[TestForge] Failed to update timeout Run record:', dbError.message);
           }
 
+          emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+            runId,
+            status: 'failed',
+            durationMs,
+            error: `Execution timed out after ${timeoutMs}ms`,
+            screenshotPath: null,
+            completedAt: completedAt.toISOString(),
+          });
+
           resolve({
             statusCode: 200,
             success: false,
@@ -269,7 +333,55 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
       }, timeoutMs);
 
       child.stdout?.on('data', (chunk) => {
-        stdout += chunk.toString();
+        const chunkStr = chunk.toString();
+        stdout += chunkStr;
+        stdoutLineBuffer += chunkStr;
+
+        const lines = stdoutLineBuffer.split('\n');
+        stdoutLineBuffer = lines.pop() || ''; // keep last incomplete line segment
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+
+          if (line.startsWith('TESTFORGE_STEP_START:')) {
+            try {
+              const data = JSON.parse(line.substring('TESTFORGE_STEP_START:'.length));
+              emitRunEvent(runId, SOCKET_EVENTS.STEP_STARTED, {
+                runId,
+                stepIndex: data.stepIndex,
+                stepType: data.stepType,
+                status: 'running',
+              });
+            } catch (err) {
+              console.error('[TestForge] Failed to parse STEP_START marker:', err.message);
+            }
+          } else if (line.startsWith('TESTFORGE_STEP_PASS:')) {
+            try {
+              const data = JSON.parse(line.substring('TESTFORGE_STEP_PASS:'.length));
+              emitRunEvent(runId, SOCKET_EVENTS.STEP_PASSED, {
+                runId,
+                stepIndex: data.stepIndex,
+                stepType: data.stepType,
+                status: 'passed',
+              });
+            } catch (err) {
+              console.error('[TestForge] Failed to parse STEP_PASS marker:', err.message);
+            }
+          } else if (line.startsWith('TESTFORGE_STEP_FAIL:')) {
+            try {
+              const data = JSON.parse(line.substring('TESTFORGE_STEP_FAIL:'.length));
+              emitRunEvent(runId, SOCKET_EVENTS.STEP_FAILED, {
+                runId,
+                stepIndex: data.stepIndex,
+                stepType: data.stepType,
+                status: 'failed',
+                error: data.error,
+              });
+            } catch (err) {
+              console.error('[TestForge] Failed to parse STEP_FAIL marker:', err.message);
+            }
+          }
+        }
       });
 
       child.stderr?.on('data', (chunk) => {
@@ -309,6 +421,15 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
           } catch (dbError) {
             console.error('[TestForge] Failed to update spawn error Run record:', dbError.message);
           }
+
+          emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+            runId,
+            status: 'failed',
+            durationMs,
+            error: spawnError.message,
+            screenshotPath: null,
+            completedAt: completedAt.toISOString(),
+          });
 
           resolve({
             statusCode: 500,
@@ -371,6 +492,24 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
             });
           } catch (dbError) {
             console.error('[TestForge] Failed to persist execution Run/RunResult:', dbError.message);
+          }
+
+          if (isPassed) {
+            emitRunEvent(runId, SOCKET_EVENTS.RUN_COMPLETED, {
+              runId,
+              status: 'passed',
+              durationMs,
+              completedAt: completedAt.toISOString(),
+            });
+          } else {
+            emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+              runId,
+              status: 'failed',
+              durationMs,
+              error: safeStderr || 'Execution failed',
+              screenshotPath,
+              completedAt: completedAt.toISOString(),
+            });
           }
 
           resolve({

@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { projectService } from '../services/projectService';
 import { testCaseService } from '../services/testCaseService';
-import { Project, TestCase } from '../types';
+import { runService } from '../services/runService';
+import { getSocket, joinRunRoom, leaveRunRoom, SOCKET_EVENTS } from '../services/socket';
+import {
+  Project,
+  TestCase,
+  LiveRunState,
+  StepExecutionState,
+  SocketRunEventPayload,
+  SocketStepEventPayload,
+} from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { TestStepEditor } from '../components/test-editor/TestStepEditor';
+import { LiveExecutionPanel } from '../components/test-execution/LiveExecutionPanel';
 import {
   FileCode,
   ChevronRight,
@@ -17,6 +27,7 @@ import {
   Layers,
   ArrowLeft,
   Clock,
+  Play,
 } from 'lucide-react';
 
 export const TestCaseDetailPage: React.FC = () => {
@@ -27,6 +38,12 @@ export const TestCaseDetailPage: React.FC = () => {
   const [testCase, setTestCase] = useState<TestCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Live Execution State (Day 19)
+  const [runState, setRunState] = useState<LiveRunState | null>(null);
+  const [isRunningTest, setIsRunningTest] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   // Edit Test Case Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -61,6 +78,156 @@ export const TestCaseDetailPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [projectId, testCaseId]);
+
+  // Cleanup Socket listeners and leave room on component unmount
+  useEffect(() => {
+    return () => {
+      if (runState?.runId) {
+        leaveRunRoom(runState.runId);
+      }
+      const s = getSocket();
+      s.off(SOCKET_EVENTS.RUN_QUEUED);
+      s.off(SOCKET_EVENTS.RUN_STARTED);
+      s.off(SOCKET_EVENTS.STEP_STARTED);
+      s.off(SOCKET_EVENTS.STEP_PASSED);
+      s.off(SOCKET_EVENTS.STEP_FAILED);
+      s.off(SOCKET_EVENTS.RUN_COMPLETED);
+      s.off(SOCKET_EVENTS.RUN_FAILED);
+    };
+  }, [runState?.runId]);
+
+  const handleRunTest = async () => {
+    if (!testCase || !testCase.dsl?.steps || testCase.dsl.steps.length === 0) {
+      setRunError('Cannot run test case: Please add at least 1 test step first.');
+      return;
+    }
+
+    try {
+      setIsRunningTest(true);
+      setRunError(null);
+
+      // Initialize pending steps array for live tracking UI
+      const initialSteps: StepExecutionState[] = testCase.dsl.steps.map((step, idx) => ({
+        stepIndex: idx,
+        stepType: step.type,
+        status: 'pending',
+      }));
+
+      setRunState({
+        runId: null,
+        status: 'queued',
+        steps: initialSteps,
+      });
+
+      // 1. Trigger backend execution endpoint POST /api/runs
+      const runRes = await runService.startRun(testCase.id);
+      const currentRunId = runRes.runId;
+
+      setRunState((prev) => (prev ? { ...prev, runId: currentRunId, status: 'queued' } : null));
+
+      // 2. Connect & Join Socket.IO Room for this runId
+      const socket = getSocket();
+
+      const handleConnect = () => setIsReconnecting(false);
+      const handleDisconnect = () => setIsReconnecting(true);
+
+      socket.on('connect', handleConnect);
+      socket.on('disconnect', handleDisconnect);
+
+      joinRunRoom(currentRunId);
+
+      // 3. Register Typed Socket Event Handlers
+      socket.on(SOCKET_EVENTS.RUN_QUEUED, (data: SocketRunEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) => (prev ? { ...prev, status: 'queued' } : null));
+        }
+      });
+
+      socket.on(SOCKET_EVENTS.RUN_STARTED, (data: SocketRunEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) =>
+            prev ? { ...prev, status: 'running', startedAt: data.startedAt } : null
+          );
+        }
+      });
+
+      socket.on(SOCKET_EVENTS.STEP_STARTED, (data: SocketStepEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) => {
+            if (!prev) return null;
+            const updatedSteps = prev.steps.map((s) =>
+              s.stepIndex === data.stepIndex ? { ...s, status: 'running' as const } : s
+            );
+            return { ...prev, steps: updatedSteps };
+          });
+        }
+      });
+
+      socket.on(SOCKET_EVENTS.STEP_PASSED, (data: SocketStepEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) => {
+            if (!prev) return null;
+            const updatedSteps = prev.steps.map((s) =>
+              s.stepIndex === data.stepIndex ? { ...s, status: 'passed' as const } : s
+            );
+            return { ...prev, steps: updatedSteps };
+          });
+        }
+      });
+
+      socket.on(SOCKET_EVENTS.STEP_FAILED, (data: SocketStepEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) => {
+            if (!prev) return null;
+            const updatedSteps = prev.steps.map((s) =>
+              s.stepIndex === data.stepIndex
+                ? { ...s, status: 'failed' as const, error: data.error }
+                : s
+            );
+            return { ...prev, steps: updatedSteps };
+          });
+        }
+      });
+
+      socket.on(SOCKET_EVENTS.RUN_COMPLETED, (data: SocketRunEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: 'passed',
+                  durationMs: data.durationMs,
+                  completedAt: data.completedAt,
+                }
+              : null
+          );
+          setIsRunningTest(false);
+        }
+      });
+
+      socket.on(SOCKET_EVENTS.RUN_FAILED, (data: SocketRunEventPayload) => {
+        if (data.runId === currentRunId) {
+          setRunState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: 'failed',
+                  durationMs: data.durationMs,
+                  error: data.error,
+                  screenshotPath: data.screenshotPath,
+                  completedAt: data.completedAt,
+                }
+              : null
+          );
+          setIsRunningTest(false);
+        }
+      });
+    } catch (err: any) {
+      setRunError(err.message || 'Failed to start test execution.');
+      setIsRunningTest(false);
+      setRunState(null);
+    }
+  };
 
   const openEditModal = () => {
     if (!testCase) return;
@@ -171,7 +338,22 @@ export const TestCaseDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 self-end sm:self-center">
+          <div className="flex items-center space-x-2.5 self-end sm:self-center">
+            {/* Run Test Button */}
+            <button
+              onClick={handleRunTest}
+              disabled={isRunningTest || stepsCount === 0}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/50 disabled:text-emerald-400/50 text-white rounded-lg font-semibold text-xs transition-colors flex items-center space-x-2 shadow-lg shadow-emerald-950/20"
+              title={stepsCount === 0 ? 'Add at least 1 step to run test' : 'Run Playwright test in Chromium'}
+            >
+              {isRunningTest ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              ) : (
+                <Play className="w-4 h-4 text-white fill-current" />
+              )}
+              <span>{isRunningTest ? 'Executing...' : 'Run Test'}</span>
+            </button>
+
             <button
               onClick={openEditModal}
               className="btn-secondary text-xs flex items-center space-x-1.5"
@@ -226,6 +408,24 @@ export const TestCaseDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Execution Trigger Error Banner */}
+      {runError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center space-x-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{runError}</span>
+        </div>
+      )}
+
+      {/* Live Socket.IO Execution Status Panel (Day 19) */}
+      {runState && (
+        <LiveExecutionPanel
+          runState={runState}
+          testCaseSteps={testCase.dsl?.steps || []}
+          isReconnecting={isReconnecting}
+          onClose={() => setRunState(null)}
+        />
+      )}
 
       {/* Visual Test Step Editor Component (Day 18) */}
       <TestStepEditor
