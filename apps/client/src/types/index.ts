@@ -12,12 +12,102 @@ export interface Project {
   updatedAt: string;
 }
 
+export type StepType =
+  | 'navigate'
+  | 'click'
+  | 'fill'
+  | 'assertVisible'
+  | 'assertText'
+  | 'wait'
+  | 'screenshot';
+
+export type LocatorStrategy = 'role' | 'text' | 'css';
+
+export interface Locator {
+  strategy: LocatorStrategy;
+  value?: string;
+  role?: string;
+  name?: string;
+  fallback?: Locator;
+  fallbackLocator?: Locator;
+}
+
+export interface NavigateStep {
+  id: string;
+  type: 'navigate';
+  url: string;
+  timeout?: number;
+}
+
+export interface ClickStep {
+  id: string;
+  type: 'click';
+  locator: Locator;
+  fallbackLocator?: Locator;
+  timeout?: number;
+}
+
+export interface FillStep {
+  id: string;
+  type: 'fill';
+  locator: Locator;
+  value: string;
+  fallbackLocator?: Locator;
+  timeout?: number;
+}
+
+export interface AssertVisibleStep {
+  id: string;
+  type: 'assertVisible';
+  locator: Locator;
+  fallbackLocator?: Locator;
+  timeout?: number;
+}
+
+export interface AssertTextStep {
+  id: string;
+  type: 'assertText';
+  locator: Locator;
+  expectedText: string;
+  fallbackLocator?: Locator;
+  timeout?: number;
+}
+
+export interface WaitStep {
+  id: string;
+  type: 'wait';
+  duration: number;
+}
+
+export interface ScreenshotStep {
+  id: string;
+  type: 'screenshot';
+  name?: string;
+  fullPage?: boolean;
+}
+
+export type TestStep =
+  | NavigateStep
+  | ClickStep
+  | FillStep
+  | AssertVisibleStep
+  | AssertTextStep
+  | WaitStep
+  | ScreenshotStep;
+
+export interface TestDsl {
+  version: string;
+  name: string;
+  description?: string;
+  steps: TestStep[];
+}
+
 export interface TestCase {
   id: string;
   name: string;
   description?: string;
   projectId: string;
-  dsl?: any;
+  dsl?: TestDsl;
   createdAt: string;
   updatedAt: string;
 }

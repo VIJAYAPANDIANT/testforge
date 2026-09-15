@@ -6,7 +6,11 @@
   "main": "src/index.js",
   "types": "index.d.ts",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
   },
   "scripts": {
     "test": "node --test tests/dsl-schema.test.js"

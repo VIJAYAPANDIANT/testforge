@@ -4,6 +4,7 @@ import { projectService } from '../services/projectService';
 import { testCaseService } from '../services/testCaseService';
 import { Project, TestCase } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { TestStepEditor } from '../components/test-editor/TestStepEditor';
 import {
   FileCode,
   ChevronRight,
@@ -14,10 +15,8 @@ import {
   Trash2,
   Calendar,
   Layers,
-  Plus,
   ArrowLeft,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 
 export const TestCaseDetailPage: React.FC = () => {
@@ -71,7 +70,7 @@ export const TestCaseDetailPage: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveTestCase = async (e: React.FormEvent) => {
+  const handleSaveTestCaseDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testCase) return;
 
@@ -176,10 +175,10 @@ export const TestCaseDetailPage: React.FC = () => {
             <button
               onClick={openEditModal}
               className="btn-secondary text-xs flex items-center space-x-1.5"
-              title="Edit Test Case"
+              title="Edit Test Case Details"
             >
               <Edit2 className="w-3.5 h-3.5" />
-              <span>Edit</span>
+              <span>Edit Details</span>
             </button>
 
             <button
@@ -228,54 +227,21 @@ export const TestCaseDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Test Steps Placeholder Section (Day 17) */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h2 className="text-lg font-bold text-slate-100">Test Steps</h2>
-            <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-semibold rounded-full flex items-center space-x-1">
-              <Sparkles className="w-3 h-3" />
-              <span>Step Editor Coming in Day 18</span>
-            </span>
-          </div>
-
-          <button
-            disabled
-            className="btn-secondary text-xs opacity-50 cursor-not-allowed flex items-center space-x-1.5"
-            title="Visual Step Editor coming in Day 18"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Add Test Step</span>
-          </button>
-        </div>
-
-        {/* Steps Card Placeholder */}
-        <div className="card text-center py-16 space-y-4 border-dashed border-slate-800">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 text-slate-400">
-            <Layers className="w-6 h-6 text-blue-400" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-slate-200">No steps added yet</h3>
-            <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Your visual drag-and-drop test step editor will let you add browser actions (navigate, click, fill, assert) here.
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-400">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>Day 18 feature preview</span>
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Visual Test Step Editor Component (Day 18) */}
+      <TestStepEditor
+        testCaseId={testCase.id}
+        testCaseName={testCase.name}
+        testCaseDescription={testCase.description}
+        initialDsl={testCase.dsl}
+        onSaveSuccess={fetchData}
+      />
 
       {/* Edit Test Case Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-[#111827] border border-slate-800 rounded-xl p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-slate-100">Edit Test Case</h3>
+              <h3 className="text-lg font-bold text-slate-100">Edit Test Case Details</h3>
               <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="text-slate-400 hover:text-slate-200 transition-colors"
@@ -290,7 +256,7 @@ export const TestCaseDetailPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSaveTestCase} className="space-y-4">
+            <form onSubmit={handleSaveTestCaseDetails} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                   Test Case Name *
