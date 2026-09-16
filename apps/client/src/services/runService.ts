@@ -1,5 +1,5 @@
 import api from './api';
-import { ApiResponse } from '../types';
+import { ApiResponse, RunItem, RunDetailData } from '../types';
 
 export const runService = {
   /**
@@ -26,12 +26,36 @@ export const runService = {
   },
 
   /**
+   * Fetches execution run history list, optionally filtered by testCaseId or projectId.
+   *
+   * @param testCaseId - Optional TestCase ID filter
+   * @param projectId - Optional Project ID filter
+   * @param limit - Optional maximum items count (default 50)
+   */
+  async getRuns(
+    testCaseId?: string,
+    projectId?: string,
+    limit: number = 50
+  ): Promise<RunItem[]> {
+    const params = new URLSearchParams();
+    if (testCaseId) params.append('testCaseId', testCaseId);
+    if (projectId) params.append('projectId', projectId);
+    if (limit) params.append('limit', limit.toString());
+
+    const response = await api.get<ApiResponse<RunItem[]>>(`/api/runs?${params.toString()}`);
+    return response.data.data || [];
+  },
+
+  /**
    * Retrieves persistent Run and RunResult details by run ID.
    *
    * @param runId - Run ID
    */
-  async getRunById(runId: string): Promise<{ run: any; result: any }> {
-    const response = await api.get<ApiResponse<{ run: any; result: any }>>(`/api/runs/${runId}`);
-    return response.data.data!;
+  async getRunById(runId: string): Promise<RunDetailData> {
+    const response = await api.get<ApiResponse<RunDetailData>>(`/api/runs/${runId}`);
+    if (!response.data.data) {
+      throw new Error('Run details not found');
+    }
+    return response.data.data;
   },
 };

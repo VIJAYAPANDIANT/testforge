@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { projectService } from '../services/projectService';
 import { testCaseService } from '../services/testCaseService';
 import { runService } from '../services/runService';
@@ -11,10 +11,13 @@ import {
   StepExecutionState,
   SocketRunEventPayload,
   SocketStepEventPayload,
+  RunItem,
 } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { TestStepEditor } from '../components/test-editor/TestStepEditor';
 import { LiveExecutionPanel } from '../components/test-execution/LiveExecutionPanel';
+import { RunHistory } from '../components/test-execution/RunHistory';
+import { RunDetailModal } from '../components/test-execution/RunDetailModal';
 import {
   FileCode,
   ChevronRight,
@@ -32,6 +35,7 @@ import {
 
 export const TestCaseDetailPage: React.FC = () => {
   const { projectId, testCaseId } = useParams<{ projectId: string; testCaseId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -44,6 +48,12 @@ export const TestCaseDetailPage: React.FC = () => {
   const [isRunningTest, setIsRunningTest] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
+
+  // Run History & Detail State (Day 20)
+  const [runsList, setRunsList] = useState<RunItem[]>([]);
+  const [loadingRuns, setLoadingRuns] = useState(false);
+  const [runsError, setRunsError] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(searchParams.get('runId'));
 
   // Edit Test Case Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -75,9 +85,42 @@ export const TestCaseDetailPage: React.FC = () => {
     }
   };
 
+  const fetchRunsHistory = useCallback(async () => {
+    if (!testCaseId) return;
+    try {
+      setLoadingRuns(true);
+      setRunsError(null);
+      const history = await runService.getRuns(testCaseId);
+      setRunsList(history);
+    } catch (err: any) {
+      setRunsError(err.message || 'Unable to load run history.');
+    } finally {
+      setLoadingRuns(false);
+    }
+  }, [testCaseId]);
+
   useEffect(() => {
     fetchData();
-  }, [projectId, testCaseId]);
+    fetchRunsHistory();
+  }, [projectId, testCaseId, fetchRunsHistory]);
+
+  // Keep selectedRunId synced with URL search params (e.g. ?runId=123)
+  useEffect(() => {
+    const urlRunId = searchParams.get('runId');
+    if (urlRunId) {
+      setSelectedRunId(urlRunId);
+    }
+  }, [searchParams]);
+
+  const handleOpenRunDetail = (runId: string) => {
+    setSelectedRunId(runId);
+    setSearchParams({ runId });
+  };
+
+  const handleCloseRunDetail = () => {
+    setSelectedRunId(null);
+    setSearchParams({});
+  };
 
   // Cleanup Socket listeners and leave room on component unmount
   useEffect(() => {
@@ -202,6 +245,7 @@ export const TestCaseDetailPage: React.FC = () => {
               : null
           );
           setIsRunningTest(false);
+          fetchRunsHistory(); // Refresh history list immediately
         }
       });
 
@@ -220,6 +264,7 @@ export const TestCaseDetailPage: React.FC = () => {
               : null
           );
           setIsRunningTest(false);
+          fetchRunsHistory(); // Refresh history list immediately
         }
       });
     } catch (err: any) {
@@ -434,6 +479,22 @@ export const TestCaseDetailPage: React.FC = () => {
         testCaseDescription={testCase.description}
         initialDsl={testCase.dsl}
         onSaveSuccess={fetchData}
+      />
+
+      {/* Run History Section (Day 20) */}
+      <RunHistory
+        runs={runsList}
+        loading={loadingRuns}
+        error={runsError}
+        onSelectRun={handleOpenRunDetail}
+        onRefresh={fetchRunsHistory}
+      />
+
+      {/* Run Detail Modal Component (Day 20) */}
+      <RunDetailModal
+        runId={selectedRunId}
+        isOpen={!!selectedRunId}
+        onClose={handleCloseRunDetail}
       />
 
       {/* Edit Test Case Modal */}

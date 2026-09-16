@@ -167,3 +167,61 @@ export interface SocketRunEventPayload {
   error?: string;
   screenshotPath?: string | null;
 }
+
+// ─── Day 20 Run History & Detail Types ───────────────────────────────────────
+
+export interface RunItem {
+  id: string;
+  testCaseId: string;
+  testCaseName?: string;
+  projectId: string;
+  projectName?: string;
+  status: RunStatus;
+  durationMs: number;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  exitCode?: number | null;
+  screenshotPath?: string | null;
+}
+
+export interface RunStepResult {
+  stepIndex: number;
+  stepType: StepType;
+  status: 'passed' | 'failed' | 'pending';
+  error?: string;
+  durationMs?: number;
+}
+
+export interface RunDetailResult {
+  _id?: string;
+  id?: string;
+  run: string;
+  status: 'passed' | 'failed';
+  exitCode?: number | null;
+  stdout?: string;
+  stderr?: string;
+  screenshotPath?: string | null;
+  durationMs: number;
+  stepResults: RunStepResult[];
+  createdAt: string;
+}
+
+export interface RunDetailData {
+  run: {
+    _id?: string;
+    id?: string;
+    testCase?: { _id?: string; id?: string; name: string; dsl?: TestDsl } | string;
+    project?: { _id?: string; id?: string; name: string } | string;
+    status: RunStatus;
+    durationMs: number;
+    startedAt?: string;
+    completedAt?: string;
+    createdAt: string;
+    exitCode?: number | null;
+    stdout?: string;
+    stderr?: string;
+    screenshotPath?: string | null;
+  };
+  result: RunDetailResult | null;
+}

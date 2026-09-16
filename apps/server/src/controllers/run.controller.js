@@ -96,6 +96,72 @@ export const executeRun = async (req, res, next) => {
 };
 
 /**
+ * GET /api/runs
+ * Fetches run history list sorted newest first (createdAt DESC).
+ * Can be filtered by query params: testCaseId, projectId, limit.
+ * Requires JWT authentication and enforces user authorization.
+ */
+export const getRuns = async (req, res, next) => {
+  try {
+    const { testCaseId, projectId, limit = 50 } = req.query;
+
+    const filter = { user: req.user._id };
+
+    if (testCaseId) {
+      if (!mongoose.Types.ObjectId.isValid(testCaseId.toString().trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid testCaseId format',
+        });
+      }
+      filter.testCase = testCaseId.toString().trim();
+    }
+
+    if (projectId) {
+      if (!mongoose.Types.ObjectId.isValid(projectId.toString().trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid projectId format',
+        });
+      }
+      filter.project = projectId.toString().trim();
+    }
+
+    const maxLimit = Math.min(parseInt(limit, 10) || 50, 100);
+
+    const runs = await Run.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(maxLimit)
+      .populate('testCase', 'name')
+      .populate('project', 'name')
+      .lean();
+
+    const formattedRuns = runs.map((run) => ({
+      id: run._id.toString(),
+      testCaseId: run.testCase?._id?.toString() || run.testCase?.toString() || '',
+      testCaseName: run.testCase?.name || 'Unknown Test Case',
+      projectId: run.project?._id?.toString() || run.project?.toString() || '',
+      projectName: run.project?.name || '',
+      status: run.status,
+      durationMs: run.durationMs,
+      startedAt: run.startedAt,
+      completedAt: run.completedAt,
+      createdAt: run.createdAt,
+      exitCode: run.exitCode,
+      screenshotPath: run.screenshotPath,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: formattedRuns.length,
+      data: formattedRuns,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/runs/:id
  * Fetches execution run details and associated run result by ID.
  * Requires JWT authentication.
@@ -126,6 +192,16 @@ export const getRunById = async (req, res, next) => {
         success: false,
         message: 'Access forbidden: You do not own this run',
       });
+    }
+
+    // Safely populate testCase and project if populate method exists on document
+    if (typeof run.populate === 'function') {
+      try {
+        await run.populate('testCase', 'name dsl');
+        await run.populate('project', 'name');
+      } catch (popErr) {
+        console.warn('[TestForge] Warning populating run details:', popErr.message);
+      }
     }
 
     const result = await RunResult.findOne({ run: run._id });

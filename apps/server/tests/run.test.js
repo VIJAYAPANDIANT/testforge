@@ -294,7 +294,14 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       const Run = (await import('../src/models/Run.js')).default;
       const RunResult = (await import('../src/models/RunResult.js')).default;
 
-      const mockRun = { _id: runId, user: userId, status: 'passed' };
+      const mockRun = {
+        _id: runId,
+        user: userId,
+        status: 'passed',
+        populate: async function () {
+          return this;
+        },
+      };
       const mockResult = { _id: new mongoose.Types.ObjectId(), run: runId, status: 'passed', exitCode: 0 };
 
       const originalFindById = Run.findById;
@@ -316,6 +323,95 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       } finally {
         Run.findById = originalFindById;
         RunResult.findOne = originalFindOne;
+      }
+    });
+  });
+
+  describe('Day 20 — GET /api/runs Endpoint (Run History)', () => {
+    const createMockRes = () => {
+      const res = {};
+      res.statusCode = 200;
+      res.jsonData = null;
+      res.status = function (code) {
+        res.statusCode = code;
+        return res;
+      };
+      res.json = function (data) {
+        res.jsonData = data;
+        return res;
+      };
+      return res;
+    };
+
+    const userId = new mongoose.Types.ObjectId();
+    const testCaseId = new mongoose.Types.ObjectId();
+
+    test('Returns 400 when testCaseId query format is invalid', async () => {
+      const { getRuns } = await import('../src/controllers/run.controller.js');
+      const req = { query: { testCaseId: 'invalid-id' }, user: { _id: userId } };
+      const res = createMockRes();
+
+      await getRuns(req, res, () => {});
+
+      assert.equal(res.statusCode, 400);
+      assert.equal(res.jsonData.success, false);
+      assert.equal(res.jsonData.message, 'Invalid testCaseId format');
+    });
+
+    test('Returns 200 with formatted run history list sorted newest first', async () => {
+      const { getRuns } = await import('../src/controllers/run.controller.js');
+      const Run = (await import('../src/models/Run.js')).default;
+
+      const mockRuns = [
+        {
+          _id: new mongoose.Types.ObjectId(),
+          testCase: { _id: testCaseId, name: 'Sample Test' },
+          project: { _id: new mongoose.Types.ObjectId(), name: 'Project A' },
+          user: userId,
+          status: 'passed',
+          durationMs: 1200,
+          createdAt: new Date('2026-09-16T10:00:00Z'),
+          exitCode: 0,
+        },
+        {
+          _id: new mongoose.Types.ObjectId(),
+          testCase: { _id: testCaseId, name: 'Sample Test' },
+          project: { _id: new mongoose.Types.ObjectId(), name: 'Project A' },
+          user: userId,
+          status: 'failed',
+          durationMs: 800,
+          createdAt: new Date('2026-09-16T09:00:00Z'),
+          exitCode: 1,
+        },
+      ];
+
+      const originalFind = Run.find;
+      Run.find = () => ({
+        sort: () => ({
+          limit: () => ({
+            populate: () => ({
+              populate: () => ({
+                lean: async () => mockRuns,
+              }),
+            }),
+          }),
+        }),
+      });
+
+      try {
+        const req = { query: { testCaseId: testCaseId.toString() }, user: { _id: userId } };
+        const res = createMockRes();
+
+        await getRuns(req, res, () => {});
+
+        assert.equal(res.statusCode, 200);
+        assert.equal(res.jsonData.success, true);
+        assert.equal(res.jsonData.count, 2);
+        assert.equal(res.jsonData.data[0].status, 'passed');
+        assert.equal(res.jsonData.data[1].status, 'failed');
+        assert.equal(res.jsonData.data[0].testCaseName, 'Sample Test');
+      } finally {
+        Run.find = originalFind;
       }
     });
   });

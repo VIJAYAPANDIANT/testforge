@@ -252,6 +252,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
       let stderr = '';
       let isSettled = false;
       let stdoutLineBuffer = '';
+      const stepResults = [];
 
       const childEnv = {
         ...process.env,
@@ -301,7 +302,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
               stderr: safeStderr,
               screenshotPath: null,
               durationMs,
-              stepResults: [],
+              stepResults,
             });
           } catch (dbError) {
             console.error('[TestForge] Failed to update timeout Run record:', dbError.message);
@@ -358,6 +359,11 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
           } else if (line.startsWith('TESTFORGE_STEP_PASS:')) {
             try {
               const data = JSON.parse(line.substring('TESTFORGE_STEP_PASS:'.length));
+              stepResults.push({
+                stepIndex: data.stepIndex,
+                stepType: data.stepType,
+                status: 'passed',
+              });
               emitRunEvent(runId, SOCKET_EVENTS.STEP_PASSED, {
                 runId,
                 stepIndex: data.stepIndex,
@@ -370,6 +376,12 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
           } else if (line.startsWith('TESTFORGE_STEP_FAIL:')) {
             try {
               const data = JSON.parse(line.substring('TESTFORGE_STEP_FAIL:'.length));
+              stepResults.push({
+                stepIndex: data.stepIndex,
+                stepType: data.stepType,
+                status: 'failed',
+                error: data.error,
+              });
               emitRunEvent(runId, SOCKET_EVENTS.STEP_FAILED, {
                 runId,
                 stepIndex: data.stepIndex,
@@ -416,7 +428,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
               stderr: safeStderr,
               screenshotPath: null,
               durationMs,
-              stepResults: [],
+              stepResults,
             });
           } catch (dbError) {
             console.error('[TestForge] Failed to update spawn error Run record:', dbError.message);
@@ -488,7 +500,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
               stderr: safeStderr,
               screenshotPath,
               durationMs,
-              stepResults: [],
+              stepResults,
             });
           } catch (dbError) {
             console.error('[TestForge] Failed to persist execution Run/RunResult:', dbError.message);
