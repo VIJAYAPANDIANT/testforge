@@ -68,11 +68,21 @@ export const RunHistory: React.FC<RunHistoryProps> = ({
   };
 
   const getTriggerBadge = (triggerSource?: string) => {
+    if (triggerSource === 'github') {
+      return (
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 shrink-0"
+          title="GitHub Push Webhook Trigger"
+        >
+          <Webhook className="w-3 h-3 text-purple-400" /> GitHub
+        </span>
+      );
+    }
     if (triggerSource === 'webhook') {
       return (
         <span
           className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 shrink-0"
-          title="Automatic Webhook Trigger"
+          title="Generic Webhook Trigger"
         >
           <Webhook className="w-3 h-3" /> Webhook
         </span>

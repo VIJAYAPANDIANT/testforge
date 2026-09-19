@@ -8,6 +8,10 @@ export interface AutoTestConfig {
   enabled: boolean;
   branch: string;
   trigger: 'webhook';
+  provider?: 'generic' | 'github';
+  github?: {
+    repository?: string;
+  };
   webhookSecret: string;
   testCaseIds: string[];
 }
@@ -179,13 +183,16 @@ export interface SocketRunEventPayload {
 
 // ─── Day 20 & Day 26 Run History & Detail Types ─────────────────────────────────────
 
-export type TriggerSource = 'manual' | 'webhook';
+export type TriggerSource = 'manual' | 'webhook' | 'github';
 
 export interface TriggerMetadata {
+  provider?: string | null;
   branch?: string | null;
   commit?: string | null;
+  beforeCommit?: string | null;
   repository?: string | null;
   event?: string | null;
+  deliveryId?: string | null;
   triggeredAt?: string | null;
   eventId?: string | null;
 }

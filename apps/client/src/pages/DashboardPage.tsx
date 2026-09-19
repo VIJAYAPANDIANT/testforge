@@ -302,7 +302,11 @@ export const DashboardPage: React.FC = () => {
                           {run.projectName || '-'}
                         </td>
                         <td className="py-3 px-4">
-                          {run.triggerSource === 'webhook' ? (
+                          {run.triggerSource === 'github' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                              <Webhook className="w-3 h-3 text-purple-400" /> GitHub
+                            </span>
+                          ) : run.triggerSource === 'webhook' ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
                               <Webhook className="w-3 h-3" /> Webhook
                             </span>

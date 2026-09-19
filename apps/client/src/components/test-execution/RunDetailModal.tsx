@@ -194,16 +194,22 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                   <span className="text-slate-400 font-medium">Trigger Source:</span>
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                      run.triggerSource === 'webhook'
+                      run.triggerSource === 'github'
+                        ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                        : run.triggerSource === 'webhook'
                         ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
                         : 'bg-slate-800 text-slate-300 border border-slate-700'
                     }`}
                   >
-                    {run.triggerSource === 'webhook' ? '⚡ Webhook Automatic Run' : '👤 Manual Execution'}
+                    {run.triggerSource === 'github'
+                      ? '🐙 GitHub Push Webhook'
+                      : run.triggerSource === 'webhook'
+                      ? '⚡ Generic Webhook'
+                      : '👤 Manual Execution'}
                   </span>
                 </div>
 
-                {run.triggerSource === 'webhook' && run.triggerMetadata && (
+                {(run.triggerSource === 'webhook' || run.triggerSource === 'github') && run.triggerMetadata && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
                     {run.triggerMetadata.branch && (
                       <div>
@@ -227,6 +233,12 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                       <div>
                         <span className="text-slate-500 block">Event</span>
                         <span className="font-mono text-slate-300">{run.triggerMetadata.event}</span>
+                      </div>
+                    )}
+                    {run.triggerMetadata.deliveryId && (
+                      <div>
+                        <span className="text-slate-500 block">Delivery ID</span>
+                        <span className="font-mono text-slate-400 text-[10px] truncate block">{run.triggerMetadata.deliveryId}</span>
                       </div>
                     )}
                   </div>

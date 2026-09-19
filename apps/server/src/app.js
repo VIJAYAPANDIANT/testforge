@@ -23,8 +23,14 @@ const app = express();
 // Serve uploaded screenshots statically
 app.use('/uploads', express.static(uploadsDir));
 
-// Parse incoming JSON request bodies
-app.use(express.json());
+// Parse incoming JSON request bodies and preserve unparsed raw body Buffer for HMAC verification
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 // CORS configuration supporting single or comma-separated origins
 const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';

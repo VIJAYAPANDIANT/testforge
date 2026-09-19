@@ -36,6 +36,10 @@ export const projectService = {
     autoTest?: {
       enabled?: boolean;
       branch?: string;
+      provider?: 'generic' | 'github';
+      github?: {
+        repository?: string;
+      };
       testCaseIds?: string[];
       regenerateSecret?: boolean;
     }

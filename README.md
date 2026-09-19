@@ -192,10 +192,10 @@ Website Code Update / Deployment Event
 
 ### Webhook Endpoint & Payload Structure
 
+#### 1. Generic Webhook Integration (`POST /api/webhooks/project/:projectId`)
 - **Endpoint**: `POST /api/webhooks/project/:projectId`
-- **Authentication**: `x-testforge-webhook-secret: <your_webhook_secret>`
+- **Authentication**: Header `x-testforge-webhook-secret: <your_webhook_secret>`
 
-#### Example Webhook Request (cURL)
 ```bash
 curl -X POST "http://localhost:5000/api/webhooks/project/66f1234567890abcdef11111" \
   -H "Content-Type: application/json" \
@@ -208,13 +208,25 @@ curl -X POST "http://localhost:5000/api/webhooks/project/66f1234567890abcdef1111
   }'
 ```
 
-#### Example Response (HTTP 202 Accepted)
+#### 2. GitHub Webhook Integration (`POST /api/webhooks/github/:projectId`)
+- **Endpoint**: `POST /api/webhooks/github/:projectId`
+- **Authentication**: Header `X-Hub-Signature-256: sha256=<HMAC_SHA256_HEX>`
+- **Event**: `X-GitHub-Event: push`
+
+##### GitHub Setup Steps:
+1. Open your GitHub repository ➜ **Settings** ➜ **Webhooks** ➜ **Add webhook**.
+2. **Payload URL**: `http://localhost:5000/api/webhooks/github/<projectId>` (or your deployed server domain).
+3. **Content type**: `application/json`.
+4. **Secret**: Copy your project's Webhook Secret from TestForge.
+5. **Which events**: Select **Just the push event**.
+6. Pushes to your configured branch (e.g. `main`) will automatically trigger selected visual tests in Chromium and display real-time results on the TestForge Dashboard!
+
 ```json
 {
   "success": true,
-  "message": "Automatic tests triggered",
+  "message": "Automatic tests triggered via GitHub webhook",
   "projectId": "66f1234567890abcdef11111",
-  "triggeredTests": 3,
+  "triggeredTests": 2,
   "runIds": ["66f1234567890abcdef22222", "66f1234567890abcdef33333"]
 }
 ```

@@ -15,6 +15,10 @@ const formatProject = (project) => ({
         enabled: Boolean(project.autoTest.enabled),
         branch: project.autoTest.branch || 'main',
         trigger: project.autoTest.trigger || 'webhook',
+        provider: project.autoTest.provider || 'generic',
+        github: {
+          repository: project.autoTest.github?.repository || '',
+        },
         webhookSecret: project.autoTest.webhookSecret || '',
         testCaseIds: (project.autoTest.testCaseIds || []).map((id) =>
           id._id ? id._id.toString() : id.toString()
@@ -24,6 +28,8 @@ const formatProject = (project) => ({
         enabled: false,
         branch: 'main',
         trigger: 'webhook',
+        provider: 'generic',
+        github: { repository: '' },
         webhookSecret: '',
         testCaseIds: [],
       },
@@ -231,10 +237,24 @@ export const updateProject = async (req, res, next) => {
           validTestIds = projectTestCases.map((tc) => tc._id);
         }
 
+        const provider =
+          autoTest.provider === 'github' || autoTest.provider === 'generic'
+            ? autoTest.provider
+            : currentAuto.provider || 'generic';
+
+        const githubRepo =
+          autoTest.github && typeof autoTest.github.repository === 'string'
+            ? autoTest.github.repository.trim()
+            : currentAuto.github?.repository || '';
+
         updates.autoTest = {
           enabled: autoTest.enabled !== undefined ? Boolean(autoTest.enabled) : Boolean(currentAuto.enabled),
           branch: typeof autoTest.branch === 'string' && autoTest.branch.trim() ? autoTest.branch.trim() : (currentAuto.branch || 'main'),
           trigger: 'webhook',
+          provider,
+          github: {
+            repository: githubRepo,
+          },
           webhookSecret,
           testCaseIds: validTestIds,
         };

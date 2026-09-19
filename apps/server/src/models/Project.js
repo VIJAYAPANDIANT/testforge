@@ -36,6 +36,18 @@ const projectSchema = new mongoose.Schema(
         enum: ['webhook'],
         default: 'webhook',
       },
+      provider: {
+        type: String,
+        enum: ['generic', 'github'],
+        default: 'generic',
+      },
+      github: {
+        repository: {
+          type: String,
+          trim: true,
+          default: '',
+        },
+      },
       webhookSecret: {
         type: String,
         default: '',

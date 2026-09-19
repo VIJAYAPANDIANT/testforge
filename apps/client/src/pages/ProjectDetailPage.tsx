@@ -39,6 +39,8 @@ export const ProjectDetailPage: React.FC = () => {
   // Auto-Test Settings State
   const [autoEnabled, setAutoEnabled] = useState(false);
   const [autoBranch, setAutoBranch] = useState('main');
+  const [autoProvider, setAutoProvider] = useState<'generic' | 'github'>('generic');
+  const [githubRepo, setGithubRepo] = useState('');
   const [autoTestIds, setAutoTestIds] = useState<string[]>([]);
   const [autoSecret, setAutoSecret] = useState('');
   const [isSavingAutoTest, setIsSavingAutoTest] = useState(false);
@@ -85,6 +87,8 @@ export const ProjectDetailPage: React.FC = () => {
       if (projData.autoTest) {
         setAutoEnabled(Boolean(projData.autoTest.enabled));
         setAutoBranch(projData.autoTest.branch || 'main');
+        setAutoProvider(projData.autoTest.provider || 'generic');
+        setGithubRepo(projData.autoTest.github?.repository || '');
         setAutoTestIds(projData.autoTest.testCaseIds || []);
         setAutoSecret(projData.autoTest.webhookSecret || '');
       }
@@ -111,6 +115,10 @@ export const ProjectDetailPage: React.FC = () => {
         {
           enabled: autoEnabled,
           branch: autoBranch,
+          provider: autoProvider,
+          github: {
+            repository: githubRepo,
+          },
           testCaseIds: autoTestIds,
           regenerateSecret,
         }
@@ -119,6 +127,8 @@ export const ProjectDetailPage: React.FC = () => {
       if (updated.autoTest) {
         setAutoEnabled(Boolean(updated.autoTest.enabled));
         setAutoBranch(updated.autoTest.branch || 'main');
+        setAutoProvider(updated.autoTest.provider || 'generic');
+        setGithubRepo(updated.autoTest.github?.repository || '');
         setAutoTestIds(updated.autoTest.testCaseIds || []);
         setAutoSecret(updated.autoTest.webhookSecret || '');
       }
@@ -141,7 +151,8 @@ export const ProjectDetailPage: React.FC = () => {
 
   const getWebhookUrl = () => {
     const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
-    return `${apiBase}/api/webhooks/project/${project?.id}`;
+    const endpointPath = autoProvider === 'github' ? 'github' : 'project';
+    return `${apiBase}/api/webhooks/${endpointPath}/${project?.id}`;
   };
 
   const handleCopyWebhookUrl = () => {
@@ -382,8 +393,13 @@ export const ProjectDetailPage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <h3 className="text-base font-bold text-slate-100">Auto-Test on Website Update</h3>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  Webhook
+                  {autoProvider === 'github' ? 'GitHub Webhook' : 'Generic Webhook'}
                 </span>
+                {autoEnabled && autoProvider === 'github' && githubRepo && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    GitHub Webhook Configured
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
                 Automatically run saved tests when code updates or deployment webhooks arrive.
@@ -434,9 +450,54 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* Provider Selector Tabs */}
+        <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-3">
+          <span className="text-xs font-medium text-slate-400 mr-2">Trigger Provider:</span>
+          <button
+            type="button"
+            onClick={() => setAutoProvider('generic')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              autoProvider === 'generic'
+                ? 'bg-indigo-600 text-white shadow'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Generic Webhook
+          </button>
+          <button
+            type="button"
+            onClick={() => setAutoProvider('github')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+              autoProvider === 'github'
+                ? 'bg-indigo-600 text-white shadow'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>GitHub Webhook</span>
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
           {/* Branch & Trigger Config */}
           <div className="space-y-3">
+            {autoProvider === 'github' && (
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  GitHub Repository (owner/repo)
+                </label>
+                <input
+                  type="text"
+                  value={githubRepo}
+                  onChange={(e) => setGithubRepo(e.target.value)}
+                  placeholder="e.g. VIJAYAPANDIANT/testforge-demo"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
+                />
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  GitHub full repository name (e.g. <code className="text-indigo-400">owner/repository</code>).
+                </span>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
                 Target Branch
@@ -449,7 +510,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
               />
               <span className="text-[11px] text-slate-500 mt-1 block">
-                Webhooks targeting this branch will trigger automatic test runs.
+                Pushes targeting this branch will trigger automatic test runs.
               </span>
             </div>
 
@@ -483,7 +544,9 @@ export const ProjectDetailPage: React.FC = () => {
                 </button>
               </div>
               <span className="text-[11px] text-slate-500 mt-1 block">
-                Pass in <code className="text-slate-400">x-testforge-webhook-secret</code> HTTP header.
+                {autoProvider === 'github'
+                  ? 'Paste into GitHub Webhook Secret field (verified via X-Hub-Signature-256).'
+                  : 'Pass in x-testforge-webhook-secret HTTP header.'}
               </span>
             </div>
           </div>
@@ -492,7 +555,7 @@ export const ProjectDetailPage: React.FC = () => {
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Generated Webhook Endpoint URL
+                {autoProvider === 'github' ? 'GitHub Webhook URL' : 'Generated Webhook Endpoint URL'}
               </label>
               <div className="flex items-center space-x-2">
                 <input
@@ -556,6 +619,24 @@ export const ProjectDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* GitHub Webhook Setup Guide */}
+        {autoProvider === 'github' && (
+          <div className="mt-4 p-4 bg-slate-950/80 border border-indigo-500/20 rounded-xl space-y-2 text-xs">
+            <h4 className="font-bold text-slate-200 flex items-center gap-1.5">
+              <span>GitHub Setup Instructions</span>
+            </h4>
+            <ol className="list-decimal list-inside space-y-1 text-slate-400 text-[11px] leading-relaxed">
+              <li>Open your GitHub repository (e.g., <code className="text-indigo-300">{githubRepo || 'owner/repo'}</code>) ➜ <strong>Settings</strong> ➜ <strong>Webhooks</strong>.</li>
+              <li>Click <strong>Add webhook</strong>.</li>
+              <li>Paste <strong>Payload URL</strong>: <code className="text-indigo-300">{getWebhookUrl()}</code>.</li>
+              <li>Set <strong>Content type</strong> to <code className="text-slate-300">application/json</code>.</li>
+              <li>Paste <strong>Secret</strong>: your Webhook Secret above.</li>
+              <li>Select event trigger: <strong>Just the push event</strong>.</li>
+              <li>Click <strong>Add webhook</strong>. Pushes to branch <code className="text-indigo-300">{autoBranch}</code> will automatically run selected tests!</li>
+            </ol>
+          </div>
+        )}
       </div>
 
       {/* Test Cases Section */}
