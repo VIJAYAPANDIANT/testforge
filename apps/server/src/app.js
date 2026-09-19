@@ -47,9 +47,13 @@ app.use(
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
-// Root welcome route
+// Root welcome & health routes
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the TestForge API' });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 // API routes

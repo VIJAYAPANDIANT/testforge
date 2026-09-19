@@ -3,9 +3,9 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Architecture: Monorepo](https://img.shields.io/badge/Architecture-Monorepo-blue.svg)](https://github.com/VIJAYAPANDIANT/testforge)
-[![Build Status](https://img.shields.io/badge/tests-99%20passed-success.svg)](#testing)
+[![Build Status](https://img.shields.io/badge/tests-117%20passed-success.svg)](#testing)
 
-> **TestForge** is a visual web test automation platform that allows QA engineers and developers to build browser tests visually without manually writing Playwright code. TestForge converts visual test steps into a structured DSL, generates Playwright TypeScript tests, executes them in Chromium, and displays execution results in real-time.
+> **TestForge** is a visual web test automation platform that allows QA engineers and developers to build browser tests visually without manually writing Playwright code. TestForge converts visual test steps into a structured DSL, generates Playwright TypeScript tests, executes them in Chromium, streams execution results in real-time, supports GitHub webhook triggers on code push, and provides AI-powered failure analysis.
 
 ---
 
@@ -14,13 +14,13 @@
 ### The Problem
 - **Repetitive Manual Testing**: Regression testing by clicking manually through web applications consumes valuable developer time.
 - **High Barrier to Entry**: Writing code-based browser automation requires expertise in TypeScript, Playwright selectors, async handling, and assertion frameworks.
-- **Opaque Test Failures**: Troubleshooting broken tests without clear error tracebacks or failure screenshots is slow and frustrating.
+- **Opaque Test Failures**: Troubleshooting broken tests without clear error tracebacks, failure screenshots, or root-cause explanations is slow and frustrating.
 
 ### The Solution
-TestForge bridges visual test creation with real Playwright browser automation:
+TestForge bridges visual test creation with real Playwright browser automation and AI failure diagnosis:
 
 ```
-Visual Test Builder  ➜  Test DSL  ➜  Playwright Codegen  ➜  Chromium Worker  ➜  Socket.IO & Run History  ➜  Dashboard
+Visual Test Builder  ➜  Test DSL  ➜  Playwright Codegen  ➜  Chromium Worker  ➜  Socket.IO & Run History  ➜  AI Failure Analysis  ➜  Dashboard
 ```
 
 1. **Visual Builder**: Users build test flows using drag-and-drop or click-to-add action blocks.
@@ -28,6 +28,8 @@ Visual Test Builder  ➜  Test DSL  ➜  Playwright Codegen  ➜  Chromium Worke
 3. **Playwright Codegen Engine**: Translates high-level DSL steps into production-ready Playwright TypeScript (`.spec.ts`).
 4. **Isolated Chromium Worker**: Spawns isolated worker processes executing tests in headless Chromium.
 5. **Real-time & Persistent Reporting**: Streams live execution status via Socket.IO, persists results to MongoDB, captures failure screenshots, and renders real-time aggregate Dashboard metrics.
+6. **GitHub Webhook Automation**: Automatically triggers test suites when code is pushed to configured repository branches.
+7. **AI Failure Analysis**: Provides structured failure explanations, evidence points, technical causes, investigation steps, and suggested fixes on demand.
 
 ---
 
@@ -47,8 +49,10 @@ Visual Test Builder  ➜  Test DSL  ➜  Playwright Codegen  ➜  Chromium Worke
 - **Real-time Execution Streaming**: Socket.IO streams live execution transitions (`QUEUED`, `RUNNING`, step-by-step progress, `PASSED`, `FAILED`).
 - **Failure Screenshot Capture**: Captures and statically serves high-resolution PNG screenshots upon test assertion or timeout failures.
 - **Persistent Run History & Detail Modal**: Explore past executions, step-by-step stdout/stderr logs, duration metrics, and embedded failure screenshots.
-- **Real Dashboard Metrics**: Aggregate metric cards (`Total Projects`, `Test Cases`, `Total Runs`, `Pass Rate %`, `Passed Runs`, `Failed Runs`) and recent test executions table powered by real MongoDB data.
-- **Enterprise-Grade Security**: Enforces JWT authentication and user-scoped data authorization.
+- **GitHub & Generic Webhook Automation**: HMAC-SHA256 authenticated webhooks trigger automated test runs on website code pushes.
+- **AI-Powered Failure Analysis**: On-demand AI diagnosis powered by Google Gemini explaining why a test failed, key evidence, likely technical cause, investigation steps, and suggested fixes.
+- **Real Dashboard Metrics**: Aggregate metric cards (`Total Projects`, `Test Cases`, `Total Runs`, `Pass Rate %`, `Automatic Runs`, `Auto Pass Rate %`) and recent test executions table powered by real MongoDB data.
+- **Enterprise-Grade Security**: Enforces JWT authentication, user-scoped data authorization, input sanitization, and secret redaction.
 
 ---
 
@@ -60,14 +64,15 @@ User (Browser)
   ├─► React Frontend (apps/client)
   │     ├── Visual Builder Canvas
   │     ├── Socket.IO Client
-  │     └── Dashboard Metrics & Run History
+  │     └── Dashboard Metrics, Run History & AI Analysis UI
   │
   └─► Express REST API (apps/server) ◄──► MongoDB Atlas
-        │   ├── Auth, Projects, Test Cases, Runs APIs
+        │   ├── Auth, Projects, Test Cases, Runs, Webhooks, AI APIs
         │   └── Socket.IO Real-Time Server
         │
         ├──► Shared DSL Schema Validator (@testforge/dsl-schema)
         ├──► Playwright Code Generator (@testforge/codegen)
+        ├──► AI Failure Analysis Service (Google Gemini API)
         │
         └─► Playwright Execution Worker (apps/worker)
               └── Headless Chromium Engine
@@ -81,8 +86,8 @@ User (Browser)
 ```
 testforge/
 ├── apps/
-│   ├── client/              # React 18 + Vite + TypeScript frontend (Visual Canvas, Dashboard)
-│   ├── server/              # Express REST API & Socket.IO server (Auth, CRUD, Execution)
+│   ├── client/              # React 18 + Vite + TypeScript frontend (Visual Canvas, Dashboard, AI Analysis)
+│   ├── server/              # Express REST API & Socket.IO server (Auth, CRUD, Execution, Webhooks, AI)
 │   └── worker/              # Standalone Playwright Execution Worker
 │       └── uploads/         # Statically served failure screenshots (/uploads/screenshots)
 │
@@ -109,6 +114,7 @@ testforge/
    - `6. Screenshot`: Name `login-success`
 4. **Save & Execute**: Click `[ Save Test Case ]` ➜ Click `[ Run Test ]`.
 5. **Real-time Status**: Watch live Socket.IO step indicators ➜ View final status, duration, failure screenshots (if any), and updated Dashboard metrics.
+6. **AI Failure Analysis**: If execution fails, click `[ Analyze Failure ]` in the Run Detail modal to get a structured AI diagnosis.
 
 ---
 
@@ -140,6 +146,7 @@ testforge/
    MONGODB_URI=mongodb://127.0.0.1:27017/testforge
    JWT_SECRET=your_jwt_secret_key_here
    CLIENT_URL=http://localhost:5173
+   GEMINI_API_KEY=your_gemini_api_key_here
    ```
 
 4. **Start Development Servers:**
@@ -155,98 +162,52 @@ testforge/
 
 ## 🧪 Testing & Build Verification
 
-TestForge maintains a unit test suite across all monorepo workspaces:
+TestForge maintains an extensive unit test suite across all monorepo workspaces:
 
 ```bash
 # Build React frontend application
 npm run build --workspace=apps/client
 
-# Run all monorepo unit test suites
+# Run all monorepo unit test suites (117 tests)
 npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspace=apps/server
 ```
 
 ---
 
-## 🔄 Auto-Test on Update (Post-MVP)
+## 🔄 Auto-Test on Update & GitHub Integration
 
-TestForge supports automatic test case execution triggered by external code updates or deployment events via a generic webhook endpoint.
+TestForge supports automatic test execution triggered by code updates via webhooks.
 
-```
-Website Code Update / Deployment Event
-                  │
-                  ▼
-   Generic Webhook POST Request
-   (x-testforge-webhook-secret Header)
-                  │
-                  ▼
-       TestForge API Server
-       (Branch Filtering & Deduplication)
-                  │
-                  ▼
-       Reuses Execution Pipeline
-       (Playwright + Chromium Worker)
-                  │
-                  ▼
-     Live Socket.IO & Dashboard
-```
-
-### Webhook Endpoint & Payload Structure
-
-#### 1. Generic Webhook Integration (`POST /api/webhooks/project/:projectId`)
-- **Endpoint**: `POST /api/webhooks/project/:projectId`
-- **Authentication**: Header `x-testforge-webhook-secret: <your_webhook_secret>`
-
-```bash
-curl -X POST "http://localhost:5000/api/webhooks/project/66f1234567890abcdef11111" \
-  -H "Content-Type: application/json" \
-  -H "x-testforge-webhook-secret: 3f8a91b2c4e5d6f7890123456789abcd" \
-  -d '{
-    "event": "deployment",
-    "branch": "main",
-    "commit": "abc1234",
-    "repository": "myorg/myshop"
-  }'
-```
-
-#### 2. GitHub Webhook Integration (`POST /api/webhooks/github/:projectId`)
+### GitHub Webhook Integration (`POST /api/webhooks/github/:projectId`)
 - **Endpoint**: `POST /api/webhooks/github/:projectId`
 - **Authentication**: Header `X-Hub-Signature-256: sha256=<HMAC_SHA256_HEX>`
 - **Event**: `X-GitHub-Event: push`
 
 ##### GitHub Setup Steps:
 1. Open your GitHub repository ➜ **Settings** ➜ **Webhooks** ➜ **Add webhook**.
-2. **Payload URL**: `http://localhost:5000/api/webhooks/github/<projectId>` (or your deployed server domain).
+2. **Payload URL**: `http://localhost:5000/api/webhooks/github/<projectId>` (or your server domain).
 3. **Content type**: `application/json`.
 4. **Secret**: Copy your project's Webhook Secret from TestForge.
 5. **Which events**: Select **Just the push event**.
-6. Pushes to your configured branch (e.g. `main`) will automatically trigger selected visual tests in Chromium and display real-time results on the TestForge Dashboard!
-
-```json
-{
-  "success": true,
-  "message": "Automatic tests triggered via GitHub webhook",
-  "projectId": "66f1234567890abcdef11111",
-  "triggeredTests": 2,
-  "runIds": ["66f1234567890abcdef22222", "66f1234567890abcdef33333"]
-}
-```
+6. Pushes to your configured branch (e.g. `main`) automatically trigger visual test runs in Chromium!
 
 ---
 
-## ⚠️ MVP Limitations
+## 🤖 AI Failure Analysis
 
-- **Browser Scope**: Headless Chromium browser automation.
-- **Execution Model**: Single-runner execution per worker process.
-- **Triggers**: Manual execution trigger & generic POST webhook trigger.
-
----
-
-## 🔮 Future Roadmap
-
-- **Full CI/CD Provider Apps**: Native GitHub App and GitLab CI integration.
-- **Multi-Browser Support**: Firefox and WebKit browser execution environments.
-- **Parallel Execution**: Distributed worker queue for concurrent test suite runs.
-- **Test Scheduling**: Scheduled cron triggers for recurring automated health checks.
+When an execution fails:
+1. Open **Run History** ➜ Click the failed run row to open **Run Detail**.
+2. Click `[ 🪄 Analyze Failure ]`.
+3. TestForge collects worker stderr, step errors, and DSL context, sanitizes sensitive data (passwords, JWTs, secrets), and sends it to Gemini.
+4. Returns structured diagnosis:
+   - **Summary**: Overview of what failed.
+   - **Failed Step**: Specific step and locator details.
+   - **Observed Error**: Exact assertion or timeout error.
+   - **Likely Cause**: Technical explanation.
+   - **Evidence**: Key logs and assertions.
+   - **Suggested Investigation**: Actionable steps to debug.
+   - **Possible Fix**: Recommended adjustments.
+   - **Uncertainty**: Known limitations or missing context.
 
 ---
 
