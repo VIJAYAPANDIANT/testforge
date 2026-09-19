@@ -2,16 +2,16 @@
 
 **An Enterprise No-Code Web Test Automation & AI Diagnosis Platform**
 
-[![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933.svg?style=for-the-badge&logo=nodedotjs)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.0-61DAFB.svg?style=for-the-badge&logo=react)](https://react.dev/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.44-2EAD33.svg?style=for-the-badge&logo=playwright)](https://playwright.dev/)
-[![Express.js](https://img.shields.io/badge/Express-4.19-000000.svg?style=for-the-badge&logo=express)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248.svg?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![Socket.IO](https://img.shields.io/badge/Socket.io-4.8-010101.svg?style=for-the-badge&logo=socketdotio)](https://socket.io/)
-[![Google Gemini AI](https://img.shields.io/badge/Gemini_AI-2.5_Flash-8E75B2.svg?style=for-the-badge&logo=google)](https://ai.google.dev/)
-[![Build Status](https://img.shields.io/badge/Tests-117_Passed-success.svg?style=for-the-badge)](#-testing--build-verification)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=nodedotjs)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.0-61DAFB?logo=react)](https://react.dev/)
+[![Playwright](https://img.shields.io/badge/Playwright-1.44-2EAD33?logo=playwright)](https://playwright.dev/)
+[![Express.js](https://img.shields.io/badge/Express-4.19-000000?logo=express)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb)](https://www.mongodb.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.io-4.8-010101?logo=socketdotio)](https://socket.io/)
+[![Google Gemini AI](https://img.shields.io/badge/Gemini_AI-2.5_Flash-8E75B2?logo=google)](https://ai.google.dev/)
+[![Build Status](https://img.shields.io/badge/Tests-117_Passed-success)](#-testing--build-verification)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
 
