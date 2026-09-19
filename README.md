@@ -1,21 +1,23 @@
 <p align="center">
-  <img src="assets/logo.jpg" alt="TestForge Logo" width="180" style="border-radius: 16px;" />
+  <img src="assets/logo.jpg" alt="TestForge — Test Automation Platform" width="100%" style="max-width: 650px; border-radius: 20px;" />
 </p>
 
-# TestForge
+<p align="center">
+  <strong>An Enterprise No-Code Web Test Automation & AI Diagnosis Platform</strong>
+</p>
 
-**An Enterprise No-Code Web Test Automation & AI Diagnosis Platform**
-
-[![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=nodedotjs)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.0-61DAFB?logo=react)](https://react.dev/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.44-2EAD33?logo=playwright)](https://playwright.dev/)
-[![Express.js](https://img.shields.io/badge/Express-4.19-000000?logo=express)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb)](https://www.mongodb.com/)
-[![Socket.IO](https://img.shields.io/badge/Socket.io-4.8-010101?logo=socketdotio)](https://socket.io/)
-[![Google Gemini AI](https://img.shields.io/badge/Gemini_AI-2.5_Flash-8E75B2?logo=google)](https://ai.google.dev/)
-[![Build Status](https://img.shields.io/badge/Tests-117_Passed-success)](#-testing--build-verification)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+<p align="center">
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=nodedotjs" alt="Node.js Version" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript" alt="TypeScript" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.0-61DAFB?logo=react" alt="React" /></a>
+  <a href="https://playwright.dev/"><img src="https://img.shields.io/badge/Playwright-1.44-2EAD33?logo=playwright" alt="Playwright" /></a>
+  <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Express-4.19-000000?logo=express" alt="Express.js" /></a>
+  <a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb" alt="MongoDB" /></a>
+  <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.io-4.8-010101?logo=socketdotio" alt="Socket.IO" /></a>
+  <a href="https://ai.google.dev/"><img src="https://img.shields.io/badge/Gemini_AI-2.5_Flash-8E75B2?logo=google" alt="Google Gemini AI" /></a>
+  <a href="#-testing--build-verification"><img src="https://img.shields.io/badge/Tests-117_Passed-success" alt="Build Status" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License: MIT" /></a>
+</p>
 
 ---
 
