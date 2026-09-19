@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TestStep, StepType, TestDsl } from '../../types';
 import { ActionPalette } from './ActionPalette';
 import { CanvasWorkflow } from './CanvasWorkflow';
 import { StepPropertiesPanel } from './StepPropertiesPanel';
+import { getStepValidationErrors } from './stepValidation';
 import { validateTestDsl } from '@testforge/dsl-schema';
 import { testCaseService } from '../../services/testCaseService';
 import {
@@ -11,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface TestBuilderCanvasProps {
@@ -85,7 +87,6 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
       setSavedStepsJson(json);
       setIsDirty(false);
 
-      // Default select first step if available
       if (initialDsl.steps.length > 0 && !selectedStepId) {
         setSelectedStepId(initialDsl.steps[0].id || 'step_0');
       }
@@ -97,13 +98,27 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
     }
   }, [initialDsl]);
 
+  // Warn user before leaving page if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes in your test case. Leave without saving?';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
+
   const updateStepsState = (newSteps: TestStep[], autoSelectId?: string) => {
     setSteps(newSteps);
     setIsDirty(JSON.stringify(newSteps) !== savedStepsJson);
     setSaveSuccessMsg(null);
     setValidationErrors([]);
 
-    if (autoSelectId) {
+    if (autoSelectId !== undefined) {
       setSelectedStepId(autoSelectId);
     }
   };
@@ -145,7 +160,7 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
     updateStepsState(newSteps);
   };
 
-  // Step Duplication
+  // Step Duplication (Deep Clone)
   const handleDuplicateStep = (index: number) => {
     if (index < 0 || index >= steps.length) return;
     const targetStep = steps[index];
@@ -157,7 +172,7 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
     updateStepsState(newSteps, clonedStep.id);
   };
 
-  // Step Deletion
+  // Step Deletion with Selection Update
   const handleDeleteStep = (index: number) => {
     if (index < 0 || index >= steps.length) return;
     const stepToDelete = steps[index];
@@ -179,10 +194,35 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
     }
   };
 
-  // Save Test Case API Call
+  // Validate & Save Test Case API Call
   const handleSaveTestCase = async () => {
     setValidationErrors([]);
     setSaveSuccessMsg(null);
+
+    // 1. Check individual step validation errors
+    const stepErrors: string[] = [];
+    let firstInvalidStepId: string | null = null;
+
+    steps.forEach((step, idx) => {
+      const errs = getStepValidationErrors(step);
+      if (errs.length > 0) {
+        if (!firstInvalidStepId) {
+          firstInvalidStepId = step.id;
+        }
+        stepErrors.push(`Step ${idx + 1} (${step.type}): ${errs.join(', ')}`);
+      }
+    });
+
+    if (stepErrors.length > 0) {
+      setValidationErrors([
+        'Cannot save test case. Please fix the highlighted steps below:',
+        ...stepErrors,
+      ]);
+      if (firstInvalidStepId) {
+        setSelectedStepId(firstInvalidStepId);
+      }
+      return;
+    }
 
     const dslToSave: TestDsl = {
       version: '1.0',
@@ -191,13 +231,13 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
       steps,
     };
 
-    // Client-side schema validation using @testforge/dsl-schema
+    // 2. Client-side schema validation using @testforge/dsl-schema
     const validation = validateTestDsl(dslToSave);
     if (!validation.success && validation.errors) {
       const errMsgs = validation.errors.map(
         (e: { path?: string; message: string }) => `${e.path ? e.path + ': ' : ''}${e.message}`
       );
-      setValidationErrors(errMsgs);
+      setValidationErrors(['Schema validation failed:', ...errMsgs]);
       return;
     }
 
@@ -288,12 +328,12 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
 
       {/* Validation Errors Notification */}
       {validationErrors.length > 0 && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-1 text-red-400 text-xs">
-          <div className="flex items-center space-x-2 font-bold text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>Validation Error</span>
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-1.5 text-red-400 text-xs">
+          <div className="flex items-center space-x-2 font-bold text-sm text-red-300">
+            <AlertCircle className="w-4.5 h-4.5 shrink-0 text-red-400" />
+            <span>Validation Blocked Save</span>
           </div>
-          <ul className="list-disc list-inside space-y-1 pl-1">
+          <ul className="list-disc list-inside space-y-1 pl-1 text-red-300">
             {validationErrors.map((err, idx) => (
               <li key={idx}>{err}</li>
             ))}
@@ -325,7 +365,11 @@ export const TestBuilderCanvas: React.FC<TestBuilderCanvasProps> = ({
         <div className="lg:col-span-4 h-full">
           <StepPropertiesPanel
             step={selectedStep}
+            stepIndex={selectedStepIndex}
+            totalSteps={steps.length}
             onChange={handleUpdateStep}
+            onMoveUp={() => selectedStepIndex > 0 && handleMoveStep(selectedStepIndex, selectedStepIndex - 1)}
+            onMoveDown={() => selectedStepIndex < steps.length - 1 && handleMoveStep(selectedStepIndex, selectedStepIndex + 1)}
             onDuplicate={() => selectedStepIndex >= 0 && handleDuplicateStep(selectedStepIndex)}
             onDelete={() => selectedStepIndex >= 0 && handleDeleteStep(selectedStepIndex)}
           />
