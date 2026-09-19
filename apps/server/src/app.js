@@ -25,10 +25,15 @@ app.use('/uploads', express.static(uploadsDir));
 // Parse incoming JSON request bodies
 app.use(express.json());
 
-// CORS — allow requests only from the React dev server
+// CORS configuration supporting single or comma-separated origins
+const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
+const allowedOrigins = clientOrigin.includes(',')
+  ? clientOrigin.split(',').map((o) => o.trim())
+  : clientOrigin;
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true,
   })
 );

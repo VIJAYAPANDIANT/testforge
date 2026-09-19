@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:6-jammy
+    container_name: testforge-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: testforge
+    volumes:
+      - mongodb_data:/data/db
+
+  # TestForge Express REST API & Socket.IO Server
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: testforge-server
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/testforge
+      JWT_SECRET: production_jwt_secret_key_testforge_2026
+      CLIENT_URL: http://localhost:5173
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:
