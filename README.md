@@ -1,4 +1,8 @@
-# TestForge 🚀
+<p align="center">
+  <img src="assets/logo.jpg" alt="TestForge Logo" width="180" style="border-radius: 16px;" />
+</p>
+
+# TestForge
 
 **An Enterprise No-Code Web Test Automation & AI Diagnosis Platform**
 

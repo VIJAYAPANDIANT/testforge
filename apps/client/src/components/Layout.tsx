@@ -16,9 +16,7 @@ export const Layout: React.FC = () => {
             {/* Left Brand & Nav Links */}
             <div className="flex items-center space-x-8">
               <Link to="/dashboard" className="flex items-center space-x-3 text-blue-400 font-bold text-xl tracking-tight group">
-                <div className="bg-blue-600/20 p-2 rounded-xl border border-blue-500/30 group-hover:border-blue-500/60 transition-colors">
-                  <PlaySquare className="w-5 h-5 text-blue-400" />
-                </div>
+                <img src="/logo.jpg" alt="TestForge Logo" className="w-8 h-8 rounded-lg border border-blue-500/30 object-cover shadow-sm group-hover:border-blue-500/60 transition-colors" />
                 <span className="text-slate-100 font-extrabold group-hover:text-blue-400 transition-colors">TestForge</span>
               </Link>
 
