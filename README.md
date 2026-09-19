@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="TestForge — Enterprise Test Automation Platform" width="100%" style="max-width: 80px; border-radius: 6px;" />
+  <img src="assets/banner.jpg" alt="TestForge — Enterprise Test Automation Platform" width="100%" style="max-width: 60px; border-radius: 4px;" />
 </p>
 
 <p align="center">
@@ -246,22 +246,26 @@ erDiagram
 ## 🧩 Module Description
 
 ### 1. Frontend Module (`apps/client`)
+
 - **Visual Test Builder (`TestCaseDetailPage.tsx`)**: Visual drag-and-drop builder canvas for constructing test step sequences with real-time property editing.
 - **Dashboard (`DashboardPage.tsx`)**: Real-time aggregate metric overview cards (`Total Projects`, `Test Cases`, `Total Runs`, `Pass Rate %`, `Auto Runs`, `Auto Pass Rate %`), project dropdown filter, and trigger tab views.
 - **Run History & Detail Modal (`RunHistory.tsx`, `RunDetailModal.tsx`)**: History table sorted newest first, showing step breakdown, durations, console logs, failure screenshots, and AI analysis card.
 - **Project Detail (`ProjectDetailPage.tsx`)**: Project overview, test case listing, environment management, and Webhook Auto-Test configuration UI.
 
 ### 2. Server Module (`apps/server`)
+
 - **Authentication & Controllers**: User registration, JWT login (`auth.controller.js`), project CRUD (`project.controller.js`), test case CRUD (`testcase.controller.js`), execution management (`run.controller.js`), and webhook handlers (`webhook.controller.js`).
 - **Execution Service (`execution.service.js`)**: Spawns Playwright worker processes, manages temporary `.spec.ts` files, emits Socket.IO events, records `Run` & `RunResult` MongoDB documents.
 - **AI Failure Analysis Service (`aiService.js`)**: Redacts sensitive credentials (`<REDACTED>`), constructs Gemini AI prompts, parses structured JSON diagnoses, and handles provider failures gracefully.
 - **Real-Time Socket.IO Server (`socket/index.js`)**: WebSockets server managing run room subscriptions and streaming execution transitions.
 
 ### 3. Worker Module (`apps/worker`)
+
 - **Execution CLI (`cli.js`)**: Standalone CLI entrypoint that reads generated Playwright spec files, launches headless Chromium via `@playwright/test`, captures output logs, generates failure PNG screenshots, and returns exit codes.
 - **Upload Storage (`uploads/screenshots`)**: Statically served screenshot filesystem directory.
 
 ### 4. Shared Packages (`packages/`)
+
 - **DSL Schema Validator (`packages/dsl-schema`)**: Shared JSON schema definition and validator using Ajv for 7 step types and locator strategies.
 - **Code Generator Engine (`packages/codegen`)**: Code generation module converting Test DSL JSON into executable Playwright TypeScript code.
 
@@ -269,36 +273,39 @@ erDiagram
 
 ## 💻 Technology Stack
 
-| Category | Technology | Usage / Purpose |
-| :--- | :--- | :--- |
-| **Frontend Framework** | React 18 + Vite | Single Page Application framework with HMR |
-| **Language** | TypeScript 5.0 / JavaScript ES2022 | Strict type safety across client and packages |
-| **Styling & Icons** | Tailwind CSS + Lucide React | Modern dark-mode UI styling and icon set |
-| **Backend Runtime** | Node.js (>= 18.0.0) | Asynchronous JavaScript backend runtime |
-| **REST Server** | Express.js 4.19 | HTTP REST API routing and middleware |
-| **Database** | MongoDB Atlas / Mongoose 8 | Document database and ODM modeling |
-| **Real-Time Engine** | Socket.IO 4.8 | WebSockets execution event streaming |
-| **Test Automation** | Playwright 1.44 | Headless Chromium browser automation engine |
-| **AI Diagnosis** | Google Gemini 2.5 Flash | Server-side AI failure analysis engine |
-| **Security & Auth** | JWT + bcryptjs + crypto | Token authentication, password hashing, HMAC SHA-256 |
-| **Workspace Manager** | npm Workspaces | Monorepo package management |
+| Category               | Technology                         | Usage / Purpose                                      |
+| :--------------------- | :--------------------------------- | :--------------------------------------------------- |
+| **Frontend Framework** | React 18 + Vite                    | Single Page Application framework with HMR           |
+| **Language**           | TypeScript 5.0 / JavaScript ES2022 | Strict type safety across client and packages        |
+| **Styling & Icons**    | Tailwind CSS + Lucide React        | Modern dark-mode UI styling and icon set             |
+| **Backend Runtime**    | Node.js (>= 18.0.0)                | Asynchronous JavaScript backend runtime              |
+| **REST Server**        | Express.js 4.19                    | HTTP REST API routing and middleware                 |
+| **Database**           | MongoDB Atlas / Mongoose 8         | Document database and ODM modeling                   |
+| **Real-Time Engine**   | Socket.IO 4.8                      | WebSockets execution event streaming                 |
+| **Test Automation**    | Playwright 1.44                    | Headless Chromium browser automation engine          |
+| **AI Diagnosis**       | Google Gemini 2.5 Flash            | Server-side AI failure analysis engine               |
+| **Security & Auth**    | JWT + bcryptjs + crypto            | Token authentication, password hashing, HMAC SHA-256 |
+| **Workspace Manager**  | npm Workspaces                     | Monorepo package management                          |
 
 ---
 
 ## 🎨 UI Design & Workflows
 
 ### 1. Dashboard View
+
 - **Header & Filter Bar**: Welcome banner with user greeting, project context filter dropdown (`All Projects` or specific project), and `[Refresh]` button.
 - **Auto-Test Summary Banner**: Prominently displays selected project Auto-Test configuration (`Enabled`/`Disabled`), provider (`GitHub Webhook` / `Generic Webhook`), target repository, monitored branch, configured test count, and `[Configure Settings]` link.
 - **8 Metric Overview Cards**: `Total Projects`, `Test Cases`, `Total Runs`, `Overall Pass Rate %`, `Automatic Runs`, `Auto Pass Rate %`, `Auto Passed`, `Auto Failed`.
 - **Recent Executions Table**: Filter tabs (`All`, `Manual`, `Automatic`, `GitHub`) displaying Test Case name, Project, Trigger source & Git branch/commit badges, Status, Duration, Timestamp, and row click opening `RunDetailModal`.
 
 ### 2. Visual Test Builder Canvas
+
 - **Action Blocks Palette**: Click or drag to add `Navigate`, `Click`, `Fill`, `Assert Visible`, `Assert Text`, `Wait`, or `Screenshot` steps.
 - **Step Property Inspector**: Edit step target locator strategy (`role`, `text`, `css`), value, timeout, and fallback locator properties.
 - **Toolbar**: `[ Save Test Case ]`, `[ Run Test ]`, step reordering handles, step duplication, step deletion, and instant DSL validation indicator.
 
 ### 3. Run Detail & AI Failure Analysis Modal
+
 - **Execution Overview**: Duration, Exit Code, Started At, Completed At, Trigger Source & Webhook Metadata badges.
 - **AI Failure Analysis Card** (Failed Runs Only):
   - `[ 🪄 Analyze Failure ]` action button.
@@ -313,6 +320,7 @@ erDiagram
 ## 🛠️ Setup & Development Guide
 
 ### Prerequisites
+
 - **Node.js**: `>= 18.0.0`
 - **npm**: `>= 8.0.0`
 - **MongoDB**: Local MongoDB instance or MongoDB Atlas Connection URI
@@ -320,18 +328,21 @@ erDiagram
 ### Installation
 
 1. **Clone the Repository:**
+
    ```bash
    git clone https://github.com/VIJAYAPANDIANT/testforge.git
    cd testforge
    ```
 
 2. **Install Workspace Dependencies:**
+
    ```bash
    npm run install:all
    ```
 
 3. **Configure Environment Variables:**
    Create `.env` in `apps/server/.env` based on `.env.example`:
+
    ```ini
    PORT=5000
    NODE_ENV=development
@@ -344,6 +355,7 @@ erDiagram
    ```
 
 4. **Start Development Servers:**
+
    ```bash
    # Start backend API server (http://localhost:5000)
    npm run dev:server
