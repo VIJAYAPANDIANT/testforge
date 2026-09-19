@@ -21,6 +21,12 @@ import {
   RefreshCw,
   ExternalLink,
   Webhook,
+  GitBranch,
+  GitCommit,
+  Settings,
+  Filter,
+  ShieldCheck,
+  Zap,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -30,6 +36,10 @@ export const DashboardPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [recentRuns, setRecentRuns] = useState<RunItem[]>([]);
   
+  // Filtering state
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+  const [activeTriggerTab, setActiveTriggerTab] = useState<'all' | 'manual' | 'auto' | 'github'>('all');
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,10 +51,13 @@ export const DashboardPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      const projIdFilter = selectedProjectId !== 'all' ? selectedProjectId : undefined;
+      const triggerFilter = activeTriggerTab !== 'all' ? activeTriggerTab : undefined;
+
       const [statsData, projectsData, runsData] = await Promise.all([
-        runService.getRunStats(),
+        runService.getRunStats(projIdFilter),
         projectService.getProjects(),
-        runService.getRuns(undefined, undefined, 10),
+        runService.getRuns(undefined, projIdFilter, 50, triggerFilter),
       ]);
 
       setStats(statsData);
@@ -55,11 +68,16 @@ export const DashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProjectId, activeTriggerTab]);
 
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Selected project object for configuration summary card
+  const activeProject = selectedProjectId !== 'all'
+    ? projects.find((p) => p.id === selectedProjectId)
+    : projects[0];
 
   const formatDuration = (durationMs?: number): string => {
     if (!durationMs || durationMs <= 0) return '-';
@@ -103,20 +121,38 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-slate-950 border border-blue-500/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
-        <div className="space-y-1">
+      {/* Welcome & Filter Bar */}
+      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-slate-950 border border-blue-500/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+        <div className="space-y-1 max-w-xl">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center space-x-2">
             <span>Welcome back,</span>
             <span className="text-blue-400">{user?.name || 'Tester'}</span>
             <span>! 👋</span>
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm">
-            Monitor test execution metrics, manage projects, build visual test workflows, and view real Playwright results.
+            Monitor real-time Playwright execution metrics, auto-test update triggers, and project health.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 shrink-0 self-end md:self-center">
+        <div className="flex flex-wrap items-center gap-3 shrink-0 self-end md:self-center">
+          {/* Project Selector Filter */}
+          <div className="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300">
+            <Filter className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span className="text-slate-400 font-medium hidden sm:inline">Project:</span>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="bg-transparent border-none text-slate-100 text-xs font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="all" className="bg-slate-900 text-slate-200">All Projects ({projects.length})</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} className="bg-slate-900 text-slate-200">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={fetchDashboardData}
             disabled={loading}
@@ -129,10 +165,10 @@ export const DashboardPage: React.FC = () => {
 
           <Link
             to="/projects"
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center space-x-2 shadow-lg shadow-blue-600/20"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center space-x-2 shadow-lg shadow-blue-600/20"
           >
             <FolderGit2 className="w-4 h-4" />
-            <span>View Projects</span>
+            <span>Projects</span>
           </Link>
         </div>
       </div>
@@ -153,8 +189,96 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Real Aggregate Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* Auto-Test Configuration Summary Card */}
+      {activeProject && (
+        <div className="card p-6 bg-gradient-to-r from-slate-900 via-[#111827] to-slate-900 border-slate-800 hover:border-slate-700 transition-all rounded-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-base font-bold text-slate-100">Auto-Test Configuration</h2>
+                  <span className="text-xs text-slate-400 font-normal">({activeProject.name})</span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Automated test triggers on code push / update events for website repository.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {activeProject.autoTest?.enabled ? (
+                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Auto-Test Enabled</span>
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-800 border border-slate-700 text-slate-400 flex items-center space-x-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Auto-Test Disabled</span>
+                </span>
+              )}
+
+              <Link
+                to={`/projects/${activeProject.id}`}
+                className="btn-secondary text-xs px-3 py-1.5 flex items-center space-x-1.5"
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-400" />
+                <span>Configure Settings</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs pt-1">
+            <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-1">
+              <span className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Trigger Provider</span>
+              <div className="font-semibold text-slate-200 flex items-center space-x-2">
+                {activeProject.autoTest?.provider === 'github' ? (
+                  <span className="text-purple-400 flex items-center space-x-1">
+                    <Webhook className="w-3.5 h-3.5" />
+                    <span>GitHub Webhook</span>
+                  </span>
+                ) : (
+                  <span className="text-indigo-400 flex items-center space-x-1">
+                    <Webhook className="w-3.5 h-3.5" />
+                    <span>Generic Webhook</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-1">
+              <span className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Target Repository</span>
+              <div className="font-semibold text-slate-200 truncate font-mono">
+                {activeProject.autoTest?.github?.repository || (
+                  <span className="text-slate-500 font-sans italic">Not specified</span>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-1">
+              <span className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Monitored Branch</span>
+              <div className="font-semibold text-slate-200 flex items-center space-x-1 font-mono">
+                <GitBranch className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span>{activeProject.autoTest?.branch || 'main'}</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-1">
+              <span className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Configured Tests</span>
+              <div className="font-semibold text-slate-200 flex items-center space-x-1.5">
+                <FileCode className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>{activeProject.autoTest?.testCaseIds?.length || 0} selected test cases</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aggregate Metric Cards Grid (8 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Total Projects */}
         <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
@@ -181,7 +305,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Total Test Runs */}
+        {/* 3. Total Runs */}
         <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Runs</span>
@@ -194,10 +318,10 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4. Pass Rate % */}
+        {/* 4. Overall Pass Rate */}
         <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pass Rate</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Overall Pass Rate</span>
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
               <TrendingUp className="w-4 h-4" />
             </div>
@@ -207,50 +331,120 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 5. Passed Runs */}
+        {/* 5. Automatic Runs */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-purple-500/30 hover:border-purple-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Automatic Runs</span>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <Zap className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-purple-300">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.autoRuns ?? 0}
+          </div>
+        </div>
+
+        {/* 6. Auto Pass Rate */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-purple-500/30 hover:border-purple-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Auto Pass Rate</span>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-purple-300">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : `${stats?.autoPassRate ?? 0}%`}
+          </div>
+        </div>
+
+        {/* 7. Auto Passed */}
         <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Passed Runs</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Auto Passed</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold text-emerald-400">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.passedRuns ?? 0}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.autoPassedRuns ?? 0}
           </div>
         </div>
 
-        {/* 6. Failed Runs */}
+        {/* 8. Auto Failed */}
         <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Failed Runs</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Auto Failed</span>
             <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
               <XCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold text-red-400">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.failedRuns ?? 0}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.autoFailedRuns ?? 0}
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Recent Test Runs & Recent Projects */}
+      {/* Main Grid: Recent Test Executions & Projects */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Recent Test Runs (8 cols) */}
+        {/* Left Column: Recent Test Executions (8 cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
                 <span>Recent Test Executions</span>
               </h2>
-              <p className="text-xs text-slate-400">Real Playwright test runs executed across your projects.</p>
+              <p className="text-xs text-slate-400">Real Playwright executions triggered manually or via webhooks.</p>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+              <button
+                onClick={() => setActiveTriggerTab('all')}
+                className={`px-3 py-1 rounded-md font-semibold transition-colors ${
+                  activeTriggerTab === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setActiveTriggerTab('manual')}
+                className={`px-3 py-1 rounded-md font-semibold transition-colors ${
+                  activeTriggerTab === 'manual'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Manual
+              </button>
+              <button
+                onClick={() => setActiveTriggerTab('auto')}
+                className={`px-3 py-1 rounded-md font-semibold transition-colors ${
+                  activeTriggerTab === 'auto'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Automatic
+              </button>
+              <button
+                onClick={() => setActiveTriggerTab('github')}
+                className={`px-3 py-1 rounded-md font-semibold transition-colors ${
+                  activeTriggerTab === 'github'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                GitHub
+              </button>
             </div>
           </div>
 
           {loading ? (
             <div className="card flex items-center justify-center py-16 text-slate-400 text-xs space-x-2.5">
               <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-              <span>Loading recent test executions...</span>
+              <span>Loading test executions...</span>
             </div>
           ) : recentRuns.length === 0 ? (
             <div className="card text-center py-16 space-y-4 border-dashed border-slate-800">
@@ -258,9 +452,15 @@ export const DashboardPage: React.FC = () => {
                 <PlayCircle className="w-6 h-6 text-purple-400" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-semibold text-slate-200">No test runs yet</h3>
+                <h3 className="text-base font-semibold text-slate-200">
+                  {activeTriggerTab === 'auto' || activeTriggerTab === 'github'
+                    ? 'No automatic test runs recorded'
+                    : 'No test runs yet'}
+                </h3>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Run a test case from the visual editor to see real Playwright execution results here.
+                  {activeTriggerTab === 'auto' || activeTriggerTab === 'github'
+                    ? 'Push code to your configured GitHub repository or trigger a webhook to start automated test executions.'
+                    : 'Run a test case from the visual builder to see execution results here.'}
                 </p>
               </div>
               <Link
@@ -279,7 +479,7 @@ export const DashboardPage: React.FC = () => {
                     <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-left bg-slate-900/60">
                       <th className="py-3 px-4">Test Case</th>
                       <th className="py-3 px-4">Project</th>
-                      <th className="py-3 px-4">Trigger</th>
+                      <th className="py-3 px-4">Trigger & Context</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Duration</th>
                       <th className="py-3 px-4 text-right">Date & Time</th>
@@ -303,13 +503,35 @@ export const DashboardPage: React.FC = () => {
                         </td>
                         <td className="py-3 px-4">
                           {run.triggerSource === 'github' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                              <Webhook className="w-3 h-3 text-purple-400" /> GitHub
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                                <Webhook className="w-3 h-3 text-purple-400" /> GitHub
+                              </span>
+                              {run.triggerMetadata?.branch && (
+                                <div className="text-[10px] text-slate-400 font-mono flex items-center space-x-1 pt-0.5">
+                                  <GitBranch className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                                  <span className="truncate max-w-[120px]">{run.triggerMetadata.branch.replace('refs/heads/', '')}</span>
+                                  {run.triggerMetadata.commit && (
+                                    <span className="text-slate-500 flex items-center">
+                                      <GitCommit className="w-2.5 h-2.5 ml-1 mr-0.5" />
+                                      {run.triggerMetadata.commit.substring(0, 7)}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           ) : run.triggerSource === 'webhook' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                              <Webhook className="w-3 h-3" /> Webhook
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                <Webhook className="w-3 h-3" /> Webhook
+                              </span>
+                              {run.triggerMetadata?.branch && (
+                                <div className="text-[10px] text-slate-400 font-mono flex items-center space-x-1 pt-0.5">
+                                  <GitBranch className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+                                  <span>{run.triggerMetadata.branch}</span>
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">
                               Manual
@@ -378,8 +600,19 @@ export const DashboardPage: React.FC = () => {
                   <p className="text-xs text-slate-400 line-clamp-2">
                     {project.description || 'No description provided.'}
                   </p>
-                  <div className="text-[10px] text-slate-500 pt-2 border-t border-slate-800 flex items-center justify-between">
-                    <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
+
+                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
+                    <div className="flex items-center space-x-2">
+                      {project.autoTest?.enabled ? (
+                        <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-semibold border border-emerald-500/20">
+                          Auto-Test On
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
+                          Auto-Test Off
+                        </span>
+                      )}
+                    </div>
                     <span className="text-blue-400 font-medium group-hover:underline">View Tests &rarr;</span>
                   </div>
                 </Link>

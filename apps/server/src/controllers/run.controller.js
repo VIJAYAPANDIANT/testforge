@@ -104,7 +104,7 @@ export const executeRun = async (req, res, next) => {
  */
 export const getRuns = async (req, res, next) => {
   try {
-    const { testCaseId, projectId, limit = 50 } = req.query;
+    const { testCaseId, projectId, triggerSource, limit = 50 } = req.query || {};
 
     const filter = { user: req.user._id };
 
@@ -126,6 +126,15 @@ export const getRuns = async (req, res, next) => {
         });
       }
       filter.project = projectId.toString().trim();
+    }
+
+    if (triggerSource) {
+      const ts = triggerSource.toString().trim().toLowerCase();
+      if (ts === 'auto' || ts === 'automatic') {
+        filter.triggerSource = { $in: ['webhook', 'github'] };
+      } else if (['manual', 'webhook', 'github'].includes(ts)) {
+        filter.triggerSource = ts;
+      }
     }
 
     const maxLimit = Math.min(parseInt(limit, 10) || 50, 100);
@@ -230,21 +239,63 @@ export const getRunById = async (req, res, next) => {
  * - passedRuns
  * - failedRuns
  * - passRate (0-100%)
+ * - autoRuns
+ * - autoPassedRuns
+ * - autoFailedRuns
+ * - autoPassRate (0-100%)
+ * Optional query parameter: projectId
  * Requires JWT authentication. Enforces user authorization.
  */
 export const getRunStats = async (req, res, next) => {
   try {
     const userId = req.user._id;
+    const { projectId } = req.query || {};
 
-    const [totalProjects, totalTestCases, totalRuns, passedRuns, failedRuns] = await Promise.all([
-      Project.countDocuments({ user: userId }),
-      TestCase.countDocuments({ user: userId }),
-      Run.countDocuments({ user: userId }),
-      Run.countDocuments({ user: userId, status: 'passed' }),
-      Run.countDocuments({ user: userId, status: 'failed' }),
+    const baseFilter = { user: userId };
+    const runFilter = { user: userId };
+
+    if (projectId) {
+      if (!mongoose.Types.ObjectId.isValid(projectId.toString().trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid projectId format',
+        });
+      }
+      const validProjectId = projectId.toString().trim();
+      baseFilter._id = validProjectId; // for Project query
+      runFilter.project = validProjectId;
+    }
+
+    const projectFilter = projectId ? { _id: baseFilter._id, user: userId } : { user: userId };
+    const testCaseFilter = projectId ? { project: baseFilter._id, user: userId } : { user: userId };
+
+    const autoFilter = {
+      ...runFilter,
+      triggerSource: { $in: ['webhook', 'github'] },
+    };
+
+    const [
+      totalProjects,
+      totalTestCases,
+      totalRuns,
+      passedRuns,
+      failedRuns,
+      autoRuns,
+      autoPassedRuns,
+      autoFailedRuns,
+    ] = await Promise.all([
+      Project.countDocuments(projectFilter),
+      TestCase.countDocuments(testCaseFilter),
+      Run.countDocuments(runFilter),
+      Run.countDocuments({ ...runFilter, status: 'passed' }),
+      Run.countDocuments({ ...runFilter, status: 'failed' }),
+      Run.countDocuments(autoFilter),
+      Run.countDocuments({ ...autoFilter, status: 'passed' }),
+      Run.countDocuments({ ...autoFilter, status: 'failed' }),
     ]);
 
     const passRate = totalRuns > 0 ? Math.round((passedRuns / totalRuns) * 100) : 0;
+    const autoPassRate = autoRuns > 0 ? Math.round((autoPassedRuns / autoRuns) * 100) : 0;
 
     return res.status(200).json({
       success: true,
@@ -255,6 +306,10 @@ export const getRunStats = async (req, res, next) => {
         passedRuns,
         failedRuns,
         passRate,
+        autoRuns,
+        autoPassedRuns,
+        autoFailedRuns,
+        autoPassRate,
       },
     });
   } catch (error) {

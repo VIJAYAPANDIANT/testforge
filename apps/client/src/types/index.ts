@@ -264,4 +264,8 @@ export interface DashboardStats {
   passedRuns: number;
   failedRuns: number;
   passRate: number;
+  autoRuns?: number;
+  autoPassedRuns?: number;
+  autoFailedRuns?: number;
+  autoPassRate?: number;
 }

@@ -4,9 +4,14 @@ import { ApiResponse, RunItem, RunDetailData, DashboardStats } from '../types';
 export const runService = {
   /**
    * Fetches aggregate real dashboard metrics for the authenticated user.
+   * Optionally filtered by projectId.
    */
-  async getRunStats(): Promise<DashboardStats> {
-    const response = await api.get<ApiResponse<DashboardStats>>('/api/runs/stats');
+  async getRunStats(projectId?: string): Promise<DashboardStats> {
+    const params = new URLSearchParams();
+    if (projectId) params.append('projectId', projectId);
+
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const response = await api.get<ApiResponse<DashboardStats>>(`/api/runs/stats${queryString}`);
     if (!response.data.data) {
       throw new Error('Failed to load dashboard statistics');
     }
@@ -37,21 +42,24 @@ export const runService = {
   },
 
   /**
-   * Fetches execution run history list, optionally filtered by testCaseId or projectId.
+   * Fetches execution run history list, optionally filtered by testCaseId, projectId, or triggerSource.
    *
    * @param testCaseId - Optional TestCase ID filter
    * @param projectId - Optional Project ID filter
    * @param limit - Optional maximum items count (default 50)
+   * @param triggerSource - Optional triggerSource filter ('manual' | 'webhook' | 'github' | 'auto')
    */
   async getRuns(
     testCaseId?: string,
     projectId?: string,
-    limit: number = 50
+    limit: number = 50,
+    triggerSource?: string
   ): Promise<RunItem[]> {
     const params = new URLSearchParams();
     if (testCaseId) params.append('testCaseId', testCaseId);
     if (projectId) params.append('projectId', projectId);
     if (limit) params.append('limit', limit.toString());
+    if (triggerSource) params.append('triggerSource', triggerSource);
 
     const response = await api.get<ApiResponse<RunItem[]>>(`/api/runs?${params.toString()}`);
     return response.data.data || [];
