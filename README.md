@@ -17,104 +17,299 @@
 
 ## 📌 Executive Summary
 
-**TestForge** is a modern, end-to-end visual test automation platform built for software development teams, QA engineers, and product managers. It enables users to construct, maintain, execute, and troubleshoot automated browser tests visually—**without writing manual Playwright code**.
+**TestForge** is an end-to-end visual web test automation platform built for software development teams, QA engineers, and product managers. It enables users to construct, maintain, execute, and troubleshoot automated browser tests visually—**without writing manual Playwright code**.
 
 TestForge converts visual test workflows into a structured JSON Domain Specific Language (**DSL**), compiles the DSL into production-ready Playwright TypeScript (`.spec.ts`) scripts, executes tests in headless **Chromium** worker processes, streams live execution events via **Socket.IO**, triggers automated test suites on **GitHub code pushes**, and diagnoses failures using **Google Gemini AI**.
 
 ---
 
-## 🌟 Key Capabilities
+## 📋 Functional & Non-Functional Requirements
 
-```
-┌────────────────────────┐      ┌────────────────────────┐      ┌────────────────────────┐
-│  Visual Test Builder   │ ────►│   Test DSL Schema      │ ────►│ Playwright Code Engine │
-│  (Drag-and-Drop steps) │      │ (@testforge/dsl-schema)│      │   (@testforge/codegen) │
-└────────────────────────┘      └────────────────────────┘      └────────────────────────┘
-                                                                            │
-                                                                            ▼
-┌────────────────────────┐      ┌────────────────────────┐      ┌────────────────────────┐
-│  Auto-Test Dashboard   │ ◄────│   AI Failure Analysis  │ ◄────│ Headless Chromium      │
-│  & GitHub Webhooks     │      │ (Google Gemini API)    │      │ (Playwright Worker)    │
-└────────────────────────┘      └────────────────────────┘      └────────────────────────┘
-```
+### ⚙️ Functional Requirements
 
-### 🎨 Visual Test Builder & Resilient DSL
-- **No-Code Drag-and-Drop Canvas**: Visually assemble test flows using interactive action blocks. Supports step reordering, duplication, parameter editing, and instant validation.
-- **7 Core Test Actions**:
-  1. `Navigate`: Webpage navigation with URL parameterization (`{{BASE_URL}}`).
-  2. `Click`: Element clicks using role, text, or CSS selectors.
-  3. `Fill`: Form input population.
-  4. `Assert Visible`: Verifies DOM element visibility.
-  5. `Assert Text`: Validates element text against expected values.
-  6. `Wait`: Custom execution delays (`100ms` to `120,000ms`).
-  7. `Screenshot`: Full-page or element screenshot capture.
-- **Multi-Tier Locator Fallbacks**: Combines `role`, `text`, and `css` selector strategies with automatic backup fallbacks to prevent test flakiness when UI elements shift.
+1. **User Authentication & Authorization**:
+   - Secure JWT-based user registration, login, and session management.
+   - Resource ownership checks ensuring users access only their own projects, test cases, execution runs, screenshots, and AI analyses.
 
-### ⚙️ Code Generation & Headless Execution
-- **Automated Playwright Codegen**: `@testforge/codegen` transforms structured JSON DSL into strictly typed, production-ready Playwright TypeScript spec files.
-- **Isolated Worker Processes**: Spawns isolated worker child processes executing tests in headless Chromium.
-- **Real-Time Execution Streaming**: Live status events (`QUEUED`, `RUNNING`, step-by-step progress, `PASSED`, `FAILED`) streamed via Socket.IO.
-- **Failure Screenshots**: Automatically captures high-resolution PNG screenshots upon step assertion failures or timeouts.
+2. **Visual Test Builder & DSL Engine**:
+   - Visual drag-and-drop canvas supporting 7 action step types: `Navigate`, `Click`, `Fill`, `Assert Visible`, `Assert Text`, `Wait`, and `Screenshot`.
+   - Property inspector for configuring target locators (`role`, `text`, `css`) and fallback locators.
+   - Step reordering, duplication, parameter editing, deletion, and real-time schema validation.
 
-### 🔄 CI/CD & Webhook Test Automation
-- **GitHub Webhook Integration**: HMAC-SHA256 authenticated webhooks trigger automated test runs on GitHub code pushes (`X-Hub-Signature-256`).
-- **Generic Webhook Triggers**: Trigger test executions from external CI/CD pipelines (Jenkins, GitLab, CircleCI) using secret token authentication.
-- **Branch & Repository Filtering**: Target specific repository branches (`main`, `develop`) and specific test case subsets.
-- **Delivery Deduplication**: Guarantees idempotent execution handling via `X-GitHub-Delivery` tracking.
+3. **Playwright Code Generation**:
+   - Automated conversion of visual Test DSL JSON into valid, executable Playwright TypeScript (`.spec.ts`) scripts.
+   - Parameter interpolation (`{{BASE_URL}}`), character escaping, and locator strategy generation.
 
-### 🪄 AI-Powered Failure Analysis
-- **Automated Root-Cause Diagnosis**: On-demand AI diagnosis using Google Gemini (`gemini-2.5-flash`).
-- **Structured Failure Intelligence**:
-  - **Summary**: Concise explanation of the failure.
-  - **Failed Step**: Precise step index, action type, and locator details.
-  - **Observed Error**: Exact error trace or assertion failure.
-  - **Likely Technical Cause**: Underlying reason (e.g., locator mismatch, element timeout, UI drift).
-  - **Evidence**: Key log lines and DOM state references.
-  - **Suggested Investigation**: Actionable debugging steps for developers.
-  - **Possible Fix**: Recommended locator or code adjustments.
-  - **Uncertainty**: Transparent assessment of missing context or ambiguity.
-- **Zero-Trust Data Sanitization**: Passwords, JWTs, Bearer authorization headers, API keys, and database secrets are automatically redacted (`<REDACTED>`) before sending context to AI providers.
+4. **Isolated Test Execution Worker**:
+   - Asynchronous worker process spawning executing tests in headless Chromium.
+   - Stdout/Stderr log capture, execution duration tracking, and exit code handling.
+
+5. **Real-Time Event Streaming**:
+   - Socket.IO WebSockets streaming execution state transitions (`QUEUED`, `RUNNING`, `STEP_STARTED`, `STEP_PASSED`, `STEP_FAILED`, `PASSED`, `FAILED`).
+
+6. **Failure Screenshot Capture**:
+   - Captures high-resolution PNG screenshots upon step assertion failures or timeouts and serves them statically via secure routes.
+
+7. **CI/CD & Webhook Automation**:
+   - HMAC-SHA256 signed GitHub webhooks (`X-Hub-Signature-256`) triggering automated runs on code push events.
+   - Generic token-based webhook triggers for external CI/CD pipelines (Jenkins, GitLab, CircleCI).
+   - Monitored branch filtering (`main`, `develop`) and idempotent delivery deduplication (`X-GitHub-Delivery`).
+
+8. **AI Failure Analysis**:
+   - On-demand AI diagnosis using Google Gemini (`gemini-2.5-flash`) explaining failures, failed step index, observed errors, likely technical causes, evidence, investigation steps, and suggested fixes.
+   - Automated secret redaction masking passwords, JWTs, Bearer headers, API keys, and database tokens prior to AI transmission.
+
+9. **Auto-Test Dashboard & Metrics**:
+   - Aggregate metrics powered by real MongoDB data (`Total Projects`, `Test Cases`, `Total Runs`, `Pass Rate %`, `Automatic Runs`, `Auto Pass Rate %`).
+   - Project filter dropdown and execution trigger tabs (`All`, `Manual`, `Automatic`, `GitHub`).
 
 ---
 
-## 🏛️ System Architecture & Monorepo Structure
+### 🛡️ Non-Functional Requirements
 
-TestForge is organized as an enterprise-grade monorepo powered by npm workspaces:
+1. **Security**:
+   - Server-side isolation of `GEMINI_API_KEY` (never exposed to client bundles).
+   - Zero-trust secret masking (`<REDACTED>`) on all outbound AI payloads.
+   - Timing-safe HMAC SHA-256 webhook signature verification (`crypto.timingSafeEqual`).
+   - Path traversal prevention for screenshot static file serving.
+   - Secure child process execution via `spawn` with argument arrays (no `shell: true`).
 
-```
-testforge/
-├── apps/
-│   ├── client/                  # React 18 + Vite + TypeScript Frontend
-│   │   ├── src/components/      # Visual Builder Canvas, Run History, Run Detail Modal, AI Card
-│   │   ├── src/pages/           # Dashboard, Projects, Test Cases, Settings
-│   │   └── src/services/        # Axios API Client & Socket.IO Event Handlers
-│   │
-│   ├── server/                  # Express REST API & Socket.IO Server
-│   │   ├── src/controllers/     # Auth, Project, TestCase, Run, Webhook, AI Controllers
-│   │   ├── src/models/          # MongoDB Mongoose Schemas (User, Project, TestCase, Run, RunResult)
-│   │   ├── src/services/        # Execution Service & AI Analysis Service
-│   │   └── tests/               # Backend Unit & Integration Test Suites
-│   │
-│   └── worker/                  # Standalone Playwright Execution Engine
-│       ├── src/cli.js           # Worker Process CLI Execution Script
-│       └── uploads/             # Statically Served Failure Screenshots (/uploads/screenshots)
-│
-├── packages/
-│   ├── dsl-schema/              # Shared TestForge JSON DSL Schema & Validator (@testforge/dsl-schema)
-│   └── codegen/                 # Playwright TypeScript Code Generation Engine (@testforge/codegen)
-│
-├── .env.example                 # Environment Variable Configuration Template
-└── README.md                    # Project Documentation
+2. **Performance**:
+   - Sub-100ms Socket.IO WebSocket latency for live execution step updates.
+   - Fast REST API response times (<50ms for DB queries with indexing).
+   - Non-blocking asynchronous worker process spawning.
+
+3. **Reliability & Resilience**:
+   - Multi-tier locator fallbacks (`role` ➜ `text` ➜ `css`) preventing test flakiness.
+   - Worker crash isolation ensuring backend server stability if browser execution fails.
+
+4. **Usability & Responsiveness**:
+   - Responsive UI supporting Desktop (1440px), Laptop (1280px), Tablet (768px), and Mobile (390px).
+   - Inline skeleton loaders, user-friendly error alerts, and contextual empty states.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+graph TD
+    User["👤 User / QA Engineer"] -->|HTTP / React UI| Client["💻 React Frontend (apps/client)"]
+    GitHub["🐙 GitHub / CI/CD System"] -->|Webhook POST (HMAC SHA-256)| Server
+
+    subgraph ServerApp ["apps/server Engine"]
+        Client -->|REST API / JWT| Server["⚡ Express REST Server"]
+        Client <-->|Socket.IO Events| SocketServer["📡 Socket.IO Realtime Server"]
+        Server --> Auth["🔒 Auth & Ownership Guard"]
+        Server --> Mongo[("🍃 MongoDB Atlas")]
+        Server --> Validator["✅ DSL Schema Validator (@testforge/dsl-schema)"]
+        Server --> Codegen["⚙️ Codegen Engine (@testforge/codegen)"]
+        Server --> AIService["🪄 AI Analysis Service (Gemini API)"]
+    end
+
+    subgraph WorkerApp ["apps/worker Execution Engine"]
+        Server -->|spawn child process| Worker["🛠️ Playwright Worker CLI"]
+        Worker -->|Executes .spec.ts| Chromium["🌐 Headless Chromium"]
+        Chromium -->|On Failure| Screenshot["🖼️ Failure Screenshot Generator"]
+    end
+
+    Screenshot -->|PNG Files| Storage["📁 /uploads/screenshots"]
+    AIService -->|Sanitized Context| Gemini["🤖 Google Gemini 2.5 Flash"]
 ```
 
 ---
 
-## 🛠️ Getting Started & Quick Start Guide
+## 🎭 Use Case Diagram
+
+```mermaid
+graph LR
+    actorUser(("👤 Tester / User"))
+    actorGitHub(("🐙 GitHub / CI Pipeline"))
+
+    subgraph TestForgeSystem ["TestForge Platform"]
+        UC1["Sign Up / Login (JWT)"]
+        UC2["Manage Projects"]
+        UC3["Build Test Case Visually"]
+        UC4["Configure Resilient Locators"]
+        UC5["Execute Playwright Test"]
+        UC6["View Real-Time Execution (Socket.IO)"]
+        UC7["View Run History & Screenshots"]
+        UC8["Configure Webhook & Auto-Test"]
+        UC9["Trigger Automated Run on Push"]
+        UC10["Request AI Failure Analysis"]
+    end
+
+    actorUser --> UC1
+    actorUser --> UC2
+    actorUser --> UC3
+    actorUser --> UC4
+    actorUser --> UC5
+    actorUser --> UC6
+    actorUser --> UC7
+    actorUser --> UC8
+    actorUser --> UC10
+
+    actorGitHub --> UC9
+    UC9 --> UC5
+```
+
+---
+
+## 🗄️ Entity-Relationship (ER) Diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ PROJECT : owns
+    USER ||--o{ TESTCASE : creates
+    USER ||--o{ RUN : executes
+    PROJECT ||--o{ TESTCASE : contains
+    PROJECT ||--o{ RUN : tracks
+    TESTCASE ||--o{ RUN : executes_as
+    RUN ||--|| RUNRESULT : generates
+    RUN ||--o| FAILURE_ANALYSIS : contains
+
+    USER {
+        string _id PK
+        string name
+        string email
+        string password
+        date createdAt
+    }
+
+    PROJECT {
+        string _id PK
+        string user FK
+        string name
+        string description
+        object autoTest
+        date createdAt
+    }
+
+    TESTCASE {
+        string _id PK
+        string project FK
+        string user FK
+        string name
+        string description
+        object dsl
+        date createdAt
+    }
+
+    RUN {
+        string _id PK
+        string testCase FK
+        string project FK
+        string user FK
+        string status
+        number durationMs
+        number exitCode
+        string screenshotPath
+        string triggerSource
+        object triggerMetadata
+        object failureAnalysis
+        date createdAt
+    }
+
+    RUNRESULT {
+        string _id PK
+        string run FK
+        string status
+        number exitCode
+        string stdout
+        string stderr
+        string screenshotPath
+        array stepResults
+        date createdAt
+    }
+
+    FAILURE_ANALYSIS {
+        string status
+        string summary
+        string failedStep
+        string observedError
+        string likelyCause
+        array evidence
+        array suggestedInvestigation
+        array possibleFix
+        string uncertainty
+        date analyzedAt
+    }
+```
+
+---
+
+## 🧩 Module Description
+
+### 1. Frontend Module (`apps/client`)
+- **Visual Test Builder (`TestCaseDetailPage.tsx`)**: Visual drag-and-drop builder canvas for constructing test step sequences with real-time property editing.
+- **Dashboard (`DashboardPage.tsx`)**: Real-time aggregate metric overview cards (`Total Projects`, `Test Cases`, `Total Runs`, `Pass Rate %`, `Auto Runs`, `Auto Pass Rate %`), project dropdown filter, and trigger tab views.
+- **Run History & Detail Modal (`RunHistory.tsx`, `RunDetailModal.tsx`)**: History table sorted newest first, showing step breakdown, durations, console logs, failure screenshots, and AI analysis card.
+- **Project Detail (`ProjectDetailPage.tsx`)**: Project overview, test case listing, environment management, and Webhook Auto-Test configuration UI.
+
+### 2. Server Module (`apps/server`)
+- **Authentication & Controllers**: User registration, JWT login (`auth.controller.js`), project CRUD (`project.controller.js`), test case CRUD (`testcase.controller.js`), execution management (`run.controller.js`), and webhook handlers (`webhook.controller.js`).
+- **Execution Service (`execution.service.js`)**: Spawns Playwright worker processes, manages temporary `.spec.ts` files, emits Socket.IO events, records `Run` & `RunResult` MongoDB documents.
+- **AI Failure Analysis Service (`aiService.js`)**: Redacts sensitive credentials (`<REDACTED>`), constructs Gemini AI prompts, parses structured JSON diagnoses, and handles provider failures gracefully.
+- **Real-Time Socket.IO Server (`socket/index.js`)**: WebSockets server managing run room subscriptions and streaming execution transitions.
+
+### 3. Worker Module (`apps/worker`)
+- **Execution CLI (`cli.js`)**: Standalone CLI entrypoint that reads generated Playwright spec files, launches headless Chromium via `@playwright/test`, captures output logs, generates failure PNG screenshots, and returns exit codes.
+- **Upload Storage (`uploads/screenshots`)**: Statically served screenshot filesystem directory.
+
+### 4. Shared Packages (`packages/`)
+- **DSL Schema Validator (`packages/dsl-schema`)**: Shared JSON schema definition and validator using Ajv for 7 step types and locator strategies.
+- **Code Generator Engine (`packages/codegen`)**: Code generation module converting Test DSL JSON into executable Playwright TypeScript code.
+
+---
+
+## 💻 Technology Stack
+
+| Category | Technology | Usage / Purpose |
+| :--- | :--- | :--- |
+| **Frontend Framework** | React 18 + Vite | Single Page Application framework with HMR |
+| **Language** | TypeScript 5.0 / JavaScript ES2022 | Strict type safety across client and packages |
+| **Styling & Icons** | Tailwind CSS + Lucide React | Modern dark-mode UI styling and icon set |
+| **Backend Runtime** | Node.js (>= 18.0.0) | Asynchronous JavaScript backend runtime |
+| **REST Server** | Express.js 4.19 | HTTP REST API routing and middleware |
+| **Database** | MongoDB Atlas / Mongoose 8 | Document database and ODM modeling |
+| **Real-Time Engine** | Socket.IO 4.8 | WebSockets execution event streaming |
+| **Test Automation** | Playwright 1.44 | Headless Chromium browser automation engine |
+| **AI Diagnosis** | Google Gemini 2.5 Flash | Server-side AI failure analysis engine |
+| **Security & Auth** | JWT + bcryptjs + crypto | Token authentication, password hashing, HMAC SHA-256 |
+| **Workspace Manager** | npm Workspaces | Monorepo package management |
+
+---
+
+## 🎨 UI Design & Workflows
+
+### 1. Dashboard View
+- **Header & Filter Bar**: Welcome banner with user greeting, project context filter dropdown (`All Projects` or specific project), and `[Refresh]` button.
+- **Auto-Test Summary Banner**: Prominently displays selected project Auto-Test configuration (`Enabled`/`Disabled`), provider (`GitHub Webhook` / `Generic Webhook`), target repository, monitored branch, configured test count, and `[Configure Settings]` link.
+- **8 Metric Overview Cards**: `Total Projects`, `Test Cases`, `Total Runs`, `Overall Pass Rate %`, `Automatic Runs`, `Auto Pass Rate %`, `Auto Passed`, `Auto Failed`.
+- **Recent Executions Table**: Filter tabs (`All`, `Manual`, `Automatic`, `GitHub`) displaying Test Case name, Project, Trigger source & Git branch/commit badges, Status, Duration, Timestamp, and row click opening `RunDetailModal`.
+
+### 2. Visual Test Builder Canvas
+- **Action Blocks Palette**: Click or drag to add `Navigate`, `Click`, `Fill`, `Assert Visible`, `Assert Text`, `Wait`, or `Screenshot` steps.
+- **Step Property Inspector**: Edit step target locator strategy (`role`, `text`, `css`), value, timeout, and fallback locator properties.
+- **Toolbar**: `[ Save Test Case ]`, `[ Run Test ]`, step reordering handles, step duplication, step deletion, and instant DSL validation indicator.
+
+### 3. Run Detail & AI Failure Analysis Modal
+- **Execution Overview**: Duration, Exit Code, Started At, Completed At, Trigger Source & Webhook Metadata badges.
+- **AI Failure Analysis Card** (Failed Runs Only):
+  - `[ 🪄 Analyze Failure ]` action button.
+  - **Summary**, **Failed Step**, **Observed Error**, **Likely Technical Cause**, **Evidence** (bulleted list), **Suggested Investigation** (numbered list), **Possible Fix**, and **Uncertainty**.
+  - `[ 🔄 Re-analyze ]` button for fresh analysis requests.
+- **Step Breakdown List**: Visual step status badges (`✓ Passed` emerald vs `✕ Failed` red), durations, and inline error tracebacks.
+- **Failure Screenshot**: Embedded failure screenshot preview with open full-size link.
+- **Console Output**: Toggleable STDOUT / STDERR logs terminal viewer.
+
+---
+
+## 🛠️ Setup & Development Guide
 
 ### Prerequisites
 - **Node.js**: `>= 18.0.0`
 - **npm**: `>= 8.0.0`
-- **MongoDB**: Local MongoDB instance or MongoDB Atlas URI
+- **MongoDB**: Local MongoDB instance or MongoDB Atlas Connection URI
 
 ### Installation
 
@@ -132,7 +327,6 @@ testforge/
 3. **Configure Environment Variables:**
    Create `.env` in `apps/server/.env` based on `.env.example`:
    ```ini
-   # Server Configuration (apps/server)
    PORT=5000
    NODE_ENV=development
    MONGODB_URI=mongodb://127.0.0.1:27017/testforge
@@ -140,7 +334,6 @@ testforge/
    CLIENT_URL=http://localhost:5173
    GEMINI_API_KEY=your_gemini_api_key_here
 
-   # Client Configuration (apps/client)
    VITE_API_URL=http://localhost:5000
    ```
 
@@ -157,7 +350,7 @@ testforge/
 
 ## 🧪 Testing & Build Verification
 
-TestForge maintains a comprehensive unit and integration test suite across all monorepo packages:
+TestForge maintains an extensive automated test suite across all monorepo packages:
 
 ```bash
 # 1. Verify Frontend Production Build
@@ -166,36 +359,6 @@ npm run build --workspace=apps/client
 # 2. Execute Monorepo Automated Test Suite (117 Unit Tests)
 npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspace=apps/server
 ```
-
----
-
-## 🔌 API Reference Overview
-
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/signup` | Register new user account | ❌ No |
-| `POST` | `/api/auth/login` | Authenticate user & issue JWT | ❌ No |
-| `GET` | `/api/projects` | List projects owned by user | ✅ Yes |
-| `POST` | `/api/projects` | Create new test project | ✅ Yes |
-| `GET` | `/api/test-cases` | List test cases (filtered by project) | ✅ Yes |
-| `POST` | `/api/test-cases` | Save new visual test case DSL | ✅ Yes |
-| `POST` | `/api/runs` | Execute test case using Playwright worker | ✅ Yes |
-| `GET` | `/api/runs/stats` | Fetch dashboard aggregate execution metrics | ✅ Yes |
-| `GET` | `/api/runs/:id` | Fetch run details, step results & screenshots | ✅ Yes |
-| `POST` | `/api/runs/:id/analyze` | Trigger AI failure analysis on failed run | ✅ Yes |
-| `POST` | `/api/webhooks/github/:projectId` | GitHub Push Webhook endpoint (HMAC SHA256) | 🔑 Webhook Secret |
-| `POST` | `/api/webhooks/project/:projectId` | Generic CI/CD Webhook endpoint | 🔑 Webhook Secret |
-| `GET` | `/health` | API Health Check endpoint (`{ status: "ok" }`) | ❌ No |
-
----
-
-## 🔒 Security & Privacy Practices
-
-- **Strict Server-Side AI API Keys**: `GEMINI_API_KEY` is kept exclusively on the backend server. It is never bundled into client JS code or exposed to frontends.
-- **Sensitive Data Masking**: Automatic regex redaction masks passwords, JWT tokens, Bearer authorization headers, API keys, and database credentials before sending failure context to AI providers.
-- **HMAC SHA-256 Webhook Verification**: GitHub webhooks are authenticated using timing-safe comparisons over unparsed raw request body bytes (`req.rawBody`).
-- **Static File Serving Security**: Screenshot endpoints serve images through `express.static` with strict path isolation, protecting against directory traversal.
-- **Child Process Command Safety**: Worker execution uses safe argument arrays with `spawn` (avoiding shell interpolation).
 
 ---
 
