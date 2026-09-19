@@ -1,5 +1,5 @@
 import api from './api';
-import { ApiResponse, RunItem, RunDetailData, DashboardStats } from '../types';
+import { ApiResponse, RunItem, RunDetailData, DashboardStats, FailureAnalysis } from '../types';
 
 export const runService = {
   /**
@@ -74,6 +74,21 @@ export const runService = {
     const response = await api.get<ApiResponse<RunDetailData>>(`/api/runs/${runId}`);
     if (!response.data.data) {
       throw new Error('Run details not found');
+    }
+    return response.data.data;
+  },
+
+  /**
+   * Triggers AI failure analysis for a failed execution run.
+   *
+   * @param runId - Run ID
+   * @param forceReanalyze - Optional boolean to force fresh AI analysis
+   */
+  async analyzeRunFailure(runId: string, forceReanalyze: boolean = false): Promise<FailureAnalysis> {
+    const queryString = forceReanalyze ? '?force=true' : '';
+    const response = await api.post<ApiResponse<FailureAnalysis>>(`/api/runs/${runId}/analyze${queryString}`);
+    if (!response.data.data) {
+      throw new Error(response.data.message || 'Failed to generate AI failure analysis');
     }
     return response.data.data;
   },

@@ -1,6 +1,6 @@
 import express from 'express';
 import protect from '../middleware/auth.middleware.js';
-import { executeRun, getRuns, getRunById, getRunStats } from '../controllers/run.controller.js';
+import { executeRun, getRuns, getRunById, getRunStats, analyzeRunFailure } from '../controllers/run.controller.js';
 
 const router = express.Router();
 
@@ -15,5 +15,8 @@ router.get('/', protect, getRuns);
 
 // GET /api/runs/:id — Fetch execution run details and result by run ID
 router.get('/:id', protect, getRunById);
+
+// POST /api/runs/:id/analyze — Generate AI failure analysis for a failed execution run
+router.post('/:id/analyze', protect, analyzeRunFailure);
 
 export default router;

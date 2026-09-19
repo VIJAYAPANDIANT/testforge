@@ -81,6 +81,23 @@ const runSchema = new mongoose.Schema(
       triggeredAt: { type: Date, default: null },
       eventId: { type: String, default: null, index: true },
     },
+    failureAnalysis: {
+      status: {
+        type: String,
+        enum: ['not_analyzed', 'analyzing', 'completed', 'failed'],
+        default: 'not_analyzed',
+      },
+      summary: { type: String, default: null },
+      failedStep: { type: String, default: null },
+      observedError: { type: String, default: null },
+      likelyCause: { type: String, default: null },
+      evidence: [{ type: String }],
+      suggestedInvestigation: [{ type: String }],
+      possibleFix: [{ type: String }],
+      uncertainty: { type: String, default: null },
+      analyzedAt: { type: Date, default: null },
+      errorMessage: { type: String, default: null },
+    },
   },
   {
     timestamps: true,

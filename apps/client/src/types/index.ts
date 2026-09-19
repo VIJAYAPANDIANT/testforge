@@ -197,6 +197,20 @@ export interface TriggerMetadata {
   eventId?: string | null;
 }
 
+export interface FailureAnalysis {
+  status: 'not_analyzed' | 'analyzing' | 'completed' | 'failed';
+  summary?: string | null;
+  failedStep?: string | null;
+  observedError?: string | null;
+  likelyCause?: string | null;
+  evidence?: string[];
+  suggestedInvestigation?: string[];
+  possibleFix?: string[];
+  uncertainty?: string | null;
+  analyzedAt?: string | null;
+  errorMessage?: string | null;
+}
+
 export interface RunItem {
   id: string;
   testCaseId: string;
@@ -212,6 +226,7 @@ export interface RunItem {
   screenshotPath?: string | null;
   triggerSource?: TriggerSource;
   triggerMetadata?: TriggerMetadata | null;
+  failureAnalysis?: FailureAnalysis | null;
 }
 
 export interface RunStepResult {
@@ -253,6 +268,7 @@ export interface RunDetailData {
     screenshotPath?: string | null;
     triggerSource?: TriggerSource;
     triggerMetadata?: TriggerMetadata | null;
+    failureAnalysis?: FailureAnalysis | null;
   };
   result: RunDetailResult | null;
 }

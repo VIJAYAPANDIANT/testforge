@@ -5,6 +5,7 @@ import Run from '../models/Run.js';
 import RunResult from '../models/RunResult.js';
 import Project from '../models/Project.js';
 import { runTestCaseExecution } from '../services/execution.service.js';
+import { analyzeTestFailure } from '../services/aiService.js';
 
 /**
  * POST /api/runs
@@ -311,6 +312,136 @@ export const getRunStats = async (req, res, next) => {
         autoFailedRuns,
         autoPassRate,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/runs/:id/analyze
+ * Generates AI failure analysis for a failed execution run.
+ * Requires JWT authentication and user ownership.
+ * Available ONLY for runs with status === 'failed'.
+ */
+export const analyzeRunFailure = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const forceReanalyze = req.query?.force === 'true' || req.body?.force === true;
+
+    // 1. Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Run not found',
+      });
+    }
+
+    // 2. Fetch Run and populate testCase & project
+    const run = await Run.findById(id);
+    if (!run) {
+      return res.status(404).json({
+        success: false,
+        message: 'Run not found',
+      });
+    }
+
+    // 3. Ownership check
+    if (run.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access forbidden: You do not own this run',
+      });
+    }
+
+    // 4. Verify run status === 'failed'
+    if (run.status !== 'failed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Failure analysis is available only for failed runs',
+      });
+    }
+
+    // 5. Avoid repeated AI calls if already completed and re-analysis not forced
+    if (run.failureAnalysis && run.failureAnalysis.status === 'completed' && !forceReanalyze) {
+      return res.status(200).json({
+        success: true,
+        data: run.failureAnalysis,
+      });
+    }
+
+    // 6. Populate testCase & project details
+    if (typeof run.populate === 'function') {
+      try {
+        await run.populate('testCase', 'name dsl description');
+        await run.populate('project', 'name');
+      } catch (popErr) {
+        console.warn('[TestForge AI] Warning populating run for analysis:', popErr.message);
+      }
+    }
+
+    // 7. Load RunResult
+    const result = await RunResult.findOne({ run: run._id });
+
+    // 8. Extract failure context details
+    const testCaseObj = typeof run.testCase === 'object' ? run.testCase : null;
+    const projectObj = typeof run.project === 'object' ? run.project : null;
+
+    const stepResults = result?.stepResults || [];
+    const failedStepResult = stepResults.find((s) => s.status === 'failed');
+
+    const dslSteps = testCaseObj?.dsl?.steps || [];
+    const failedDslStep = failedStepResult && dslSteps[failedStepResult.stepIndex]
+      ? dslSteps[failedStepResult.stepIndex]
+      : null;
+
+    const truncateText = (text, maxLength = 1500) => {
+      if (!text) return '';
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '... [truncated]';
+    };
+
+    const failureContext = {
+      testCaseName: testCaseObj?.name || 'Unknown Test Case',
+      testCaseDescription: testCaseObj?.description || '',
+      projectName: projectObj?.name || '',
+      dslStepsCount: dslSteps.length,
+      failedStepIndex: failedStepResult?.stepIndex ?? null,
+      failedStepType: failedStepResult?.stepType || failedDslStep?.type || null,
+      failedStepDetails: failedDslStep || null,
+      errorMessage: failedStepResult?.error || run.stderr || result?.stderr || 'Test execution failed',
+      stdout: truncateText(run.stdout || result?.stdout || ''),
+      stderr: truncateText(run.stderr || result?.stderr || ''),
+      exitCode: run.exitCode ?? result?.exitCode ?? null,
+      durationMs: run.durationMs || result?.durationMs || 0,
+      screenshotAvailable: !!(run.screenshotPath || result?.screenshotPath),
+      triggerSource: run.triggerSource || 'manual',
+      triggerMetadata: run.triggerMetadata || null,
+    };
+
+    // 9. Execute AI Failure Analysis
+    const analysisResult = await analyzeTestFailure(failureContext);
+
+    // 10. Persist analysis to Run document
+    run.failureAnalysis = {
+      status: analysisResult.status,
+      summary: analysisResult.summary || null,
+      failedStep: analysisResult.failedStep || null,
+      observedError: analysisResult.observedError || null,
+      likelyCause: analysisResult.likelyCause || null,
+      evidence: analysisResult.evidence || [],
+      suggestedInvestigation: analysisResult.suggestedInvestigation || [],
+      possibleFix: analysisResult.possibleFix || [],
+      uncertainty: analysisResult.uncertainty || null,
+      analyzedAt: analysisResult.analyzedAt || new Date(),
+      errorMessage: analysisResult.errorMessage || null,
+    };
+
+    await run.save();
+
+    return res.status(200).json({
+      success: true,
+      data: run.failureAnalysis,
     });
   } catch (error) {
     next(error);
