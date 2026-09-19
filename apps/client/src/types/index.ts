@@ -225,3 +225,12 @@ export interface RunDetailData {
   };
   result: RunDetailResult | null;
 }
+
+export interface DashboardStats {
+  totalProjects: number;
+  totalTestCases: number;
+  totalRuns: number;
+  passedRuns: number;
+  failedRuns: number;
+  passRate: number;
+}

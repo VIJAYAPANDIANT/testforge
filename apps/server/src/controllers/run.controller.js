@@ -3,6 +3,7 @@ import TestCase from '../models/TestCase.js';
 import Environment from '../models/Environment.js';
 import Run from '../models/Run.js';
 import RunResult from '../models/RunResult.js';
+import Project from '../models/Project.js';
 import { runTestCaseExecution } from '../services/execution.service.js';
 
 /**
@@ -211,6 +212,47 @@ export const getRunById = async (req, res, next) => {
       data: {
         run,
         result: result || null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/runs/stats
+ * Fetches real aggregate dashboard metrics for the authenticated user:
+ * - totalProjects
+ * - totalTestCases
+ * - totalRuns
+ * - passedRuns
+ * - failedRuns
+ * - passRate (0-100%)
+ * Requires JWT authentication. Enforces user authorization.
+ */
+export const getRunStats = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+
+    const [totalProjects, totalTestCases, totalRuns, passedRuns, failedRuns] = await Promise.all([
+      Project.countDocuments({ user: userId }),
+      TestCase.countDocuments({ user: userId }),
+      Run.countDocuments({ user: userId }),
+      Run.countDocuments({ user: userId, status: 'passed' }),
+      Run.countDocuments({ user: userId, status: 'failed' }),
+    ]);
+
+    const passRate = totalRuns > 0 ? Math.round((passedRuns / totalRuns) * 100) : 0;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalProjects,
+        totalTestCases,
+        totalRuns,
+        passedRuns,
+        failedRuns,
+        passRate,
       },
     });
   } catch (error) {

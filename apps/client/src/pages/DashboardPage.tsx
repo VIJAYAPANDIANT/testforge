@@ -1,157 +1,383 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { projectService } from '../services/projectService';
-import { Project } from '../types';
-import { FolderGit2, FileCode, PlayCircle, Plus, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { runService } from '../services/runService';
+import { Project, RunItem, DashboardStats } from '../types';
+import { RunDetailModal } from '../components/test-execution/RunDetailModal';
+import {
+  FolderGit2,
+  FileCode,
+  PlayCircle,
+  Plus,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ChevronRight,
+  RefreshCw,
+  ExternalLink,
+} from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [recentRuns, setRecentRuns] = useState<RunItem[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const data = await projectService.getProjects();
-        setProjects(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Run detail modal state
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
-    fetchDashboardData();
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [statsData, projectsData, runsData] = await Promise.all([
+        runService.getRunStats(),
+        projectService.getProjects(),
+        runService.getRuns(undefined, undefined, 10),
+      ]);
+
+      setStats(statsData);
+      setProjects(projectsData);
+      setRecentRuns(runsData);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard statistics.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const formatDuration = (durationMs?: number): string => {
+    if (!durationMs || durationMs <= 0) return '-';
+    if (durationMs < 1000) return `${durationMs}ms`;
+    return `${(durationMs / 1000).toFixed(1)}s`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'passed':
+        return (
+          <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5 w-fit">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>Passed</span>
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-red-500/10 border border-red-500/30 text-red-400 flex items-center space-x-1.5 w-fit">
+            <XCircle className="w-3 h-3" />
+            <span>Failed</span>
+          </span>
+        );
+      case 'running':
+        return (
+          <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center space-x-1.5 w-fit animate-pulse">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span>Running</span>
+          </span>
+        );
+      case 'queued':
+      default:
+        return (
+          <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center space-x-1.5 w-fit">
+            <Clock className="w-3 h-3" />
+            <span>Queued</span>
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-900/40 via-slate-900 to-slate-900 border border-blue-500/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">
-            Welcome back, <span className="text-blue-400">{user?.name || 'Tester'}</span>! 👋
+      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-slate-950 border border-blue-500/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center space-x-2">
+            <span>Welcome back,</span>
+            <span className="text-blue-400">{user?.name || 'Tester'}</span>
+            <span>! 👋</span>
           </h1>
-          <p className="text-slate-400 text-sm mt-1.5">
-            Manage your test automation projects, build visual DSL test workflows, and view execution results.
+          <p className="text-slate-400 text-xs sm:text-sm">
+            Monitor test execution metrics, manage projects, build visual test workflows, and view real Playwright results.
           </p>
         </div>
 
-        <Link
-          to="/projects"
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-2 shrink-0 shadow-lg shadow-blue-600/20"
-        >
-          <FolderGit2 className="w-4 h-4" />
-          <span>View Projects</span>
-        </Link>
-      </div>
+        <div className="flex items-center space-x-3 shrink-0 self-end md:self-center">
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="btn-secondary text-xs flex items-center space-x-1.5 py-2 px-3"
+            title="Refresh Dashboard Data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
+            <span>Refresh</span>
+          </button>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {/* Projects Card */}
-        <div className="card flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Projects</span>
-            <div className="text-3xl font-bold text-slate-100 mt-2">
-              {loading ? <Loader2 className="w-6 h-6 animate-spin text-slate-500" /> : projects.length}
-            </div>
-          </div>
-          <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
-            <FolderGit2 className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Test Cases Card */}
-        <div className="card flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Test Cases</span>
-            <div className="text-3xl font-bold text-slate-100 mt-2">—</div>
-          </div>
-          <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
-            <FileCode className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Test Runs Card */}
-        <div className="card flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Test Runs</span>
-            <div className="text-3xl font-bold text-slate-100 mt-2">—</div>
-          </div>
-          <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center text-purple-400">
-            <PlayCircle className="w-6 h-6" />
-          </div>
+          <Link
+            to="/projects"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center space-x-2 shadow-lg shadow-blue-600/20"
+          >
+            <FolderGit2 className="w-4 h-4" />
+            <span>View Projects</span>
+          </Link>
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error state alert */}
       {error && (
-        <div className="flex items-center space-x-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
+          <div className="flex items-center space-x-2.5">
+            <AlertCircle className="w-4.5 h-4.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={fetchDashboardData}
+            className="underline hover:text-red-300 font-semibold"
+          >
+            Retry
+          </button>
         </div>
       )}
 
-      {/* Recent Projects Preview Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-100">Recent Projects</h2>
-          <Link to="/projects" className="text-xs font-medium text-blue-400 hover:underline flex items-center space-x-1">
-            <span>See All</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+      {/* Real Aggregate Metric Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* 1. Total Projects */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Projects</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <FolderGit2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-slate-100">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.totalProjects ?? projects.length}
+          </div>
         </div>
 
-        {loading ? (
-          <div className="card flex items-center justify-center py-12 text-slate-400 text-sm space-x-2">
-            <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-            <span>Loading dashboard projects...</span>
+        {/* 2. Total Test Cases */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Test Cases</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <FileCode className="w-4 h-4" />
+            </div>
           </div>
-        ) : projects.length === 0 ? (
-          <div className="card text-center py-12 space-y-4">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 text-slate-400">
-              <FolderGit2 className="w-6 h-6" />
+          <div className="text-2xl font-bold text-slate-100">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.totalTestCases ?? 0}
+          </div>
+        </div>
+
+        {/* 3. Total Test Runs */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Runs</span>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <PlayCircle className="w-4 h-4" />
             </div>
+          </div>
+          <div className="text-2xl font-bold text-slate-100">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.totalRuns ?? 0}
+          </div>
+        </div>
+
+        {/* 4. Pass Rate % */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pass Rate</span>
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-cyan-300">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : `${stats?.passRate ?? 0}%`}
+          </div>
+        </div>
+
+        {/* 5. Passed Runs */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Passed Runs</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-emerald-400">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.passedRuns ?? 0}
+          </div>
+        </div>
+
+        {/* 6. Failed Runs */}
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Failed Runs</span>
+            <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+              <XCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-red-400">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.failedRuns ?? 0}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid: Recent Test Runs & Recent Projects */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Recent Test Runs (8 cols) */}
+        <div className="lg:col-span-8 space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-semibold text-slate-200">No projects yet</h3>
-              <p className="text-sm text-slate-400 mt-1">Create your first project to start building automated tests.</p>
+              <h2 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+                <span>Recent Test Executions</span>
+              </h2>
+              <p className="text-xs text-slate-400">Real Playwright test runs executed across your projects.</p>
             </div>
-            <Link
-              to="/projects"
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Go to Projects</span>
+          </div>
+
+          {loading ? (
+            <div className="card flex items-center justify-center py-16 text-slate-400 text-xs space-x-2.5">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+              <span>Loading recent test executions...</span>
+            </div>
+          ) : recentRuns.length === 0 ? (
+            <div className="card text-center py-16 space-y-4 border-dashed border-slate-800">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800/80 text-slate-400">
+                <PlayCircle className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-slate-200">No test runs yet</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Run a test case from the visual editor to see real Playwright execution results here.
+                </p>
+              </div>
+              <Link
+                to="/projects"
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <FolderGit2 className="w-4 h-4" />
+                <span>Go to Projects</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="card p-0 overflow-hidden border-slate-800">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-900/60 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      <th className="py-3 px-4">Test Case</th>
+                      <th className="py-3 px-4">Project</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Duration</th>
+                      <th className="py-3 px-4 text-right">Date & Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-xs">
+                    {recentRuns.map((run) => (
+                      <tr
+                        key={run.id}
+                        onClick={() => setSelectedRunId(run.id)}
+                        className="hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                      >
+                        <td className="py-3 px-4 font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
+                          <div className="flex items-center space-x-2">
+                            <span>{run.testCaseName}</span>
+                            <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-slate-400">
+                          {run.projectName || '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          {getStatusBadge(run.status)}
+                        </td>
+                        <td className="py-3 px-4 text-slate-300 font-mono">
+                          {formatDuration(run.durationMs)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-400 text-[11px]">
+                          {new Date(run.createdAt).toLocaleDateString()} {new Date(run.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Recent Projects (4 cols) */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-100">Recent Projects</h2>
+            <Link to="/projects" className="text-xs font-semibold text-blue-400 hover:underline flex items-center space-x-1">
+              <span>View All</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {projects.slice(0, 4).map((project) => (
+
+          {loading ? (
+            <div className="card flex items-center justify-center py-16 text-slate-400 text-xs space-x-2">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+              <span>Loading projects...</span>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="card text-center py-12 space-y-3 border-dashed border-slate-800">
+              <FolderGit2 className="w-8 h-8 text-slate-500 mx-auto" />
+              <p className="text-xs text-slate-400">No projects created yet.</p>
               <Link
-                key={project.id}
-                to={`/projects/${project.id}/test-cases`}
-                className="card hover:border-blue-500/50 transition-all duration-200 space-y-3 group"
+                to="/projects"
+                className="inline-flex items-center space-x-1.5 btn-primary text-xs"
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-100 group-hover:text-blue-400 transition-colors">
-                    {project.name}
-                  </h3>
-                  <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                </div>
-                <p className="text-xs text-slate-400 line-clamp-2">
-                  {project.description || 'No description provided for this project.'}
-                </p>
-                <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-800/80">
-                  Created {new Date(project.createdAt).toLocaleDateString()}
-                </div>
+                <Plus className="w-3.5 h-3.5" />
+                <span>Create Project</span>
               </Link>
-            ))}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {projects.slice(0, 4).map((project) => (
+                <Link
+                  key={project.id}
+                  to={`/projects/${project.id}/test-cases`}
+                  className="card p-4 hover:border-blue-500/50 transition-all duration-200 space-y-2 group block bg-[#111827]/90"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-200 group-hover:text-blue-400 transition-colors text-sm">
+                      {project.name}
+                    </h3>
+                    <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-blue-400 transition-colors shrink-0" />
+                  </div>
+                  <p className="text-xs text-slate-400 line-clamp-2">
+                    {project.description || 'No description provided.'}
+                  </p>
+                  <div className="text-[10px] text-slate-500 pt-2 border-t border-slate-800 flex items-center justify-between">
+                    <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
+                    <span className="text-blue-400 font-medium group-hover:underline">View Tests &rarr;</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Run Detail Modal Integration */}
+      <RunDetailModal
+        runId={selectedRunId}
+        isOpen={!!selectedRunId}
+        onClose={() => setSelectedRunId(null)}
+      />
     </div>
   );
 };

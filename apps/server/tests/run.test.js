@@ -415,4 +415,94 @@ describe('Day 12 — Execution Service (apps/server)', () => {
       }
     });
   });
+
+  describe('Day 23 — GET /api/runs/stats Endpoint (Dashboard Metrics)', () => {
+    const createMockRes = () => {
+      const res = {};
+      res.statusCode = 200;
+      res.jsonData = null;
+      res.status = function (code) {
+        res.statusCode = code;
+        return res;
+      };
+      res.json = function (data) {
+        res.jsonData = data;
+        return res;
+      };
+      return res;
+    };
+
+    const userId = new mongoose.Types.ObjectId();
+
+    test('Returns 200 with real dashboard statistics and correct passRate calculation', async () => {
+      const { getRunStats } = await import('../src/controllers/run.controller.js');
+      const Project = (await import('../src/models/Project.js')).default;
+      const TestCase = (await import('../src/models/TestCase.js')).default;
+      const Run = (await import('../src/models/Run.js')).default;
+
+      const origProjectCount = Project.countDocuments;
+      const origTestCaseCount = TestCase.countDocuments;
+      const origRunCount = Run.countDocuments;
+
+      Project.countDocuments = async () => 4;
+      TestCase.countDocuments = async () => 12;
+
+      Run.countDocuments = async (query) => {
+        if (query.status === 'passed') return 8;
+        if (query.status === 'failed') return 2;
+        return 10; // totalRuns
+      };
+
+      try {
+        const req = { user: { _id: userId } };
+        const res = createMockRes();
+
+        await getRunStats(req, res, () => {});
+
+        assert.equal(res.statusCode, 200);
+        assert.equal(res.jsonData.success, true);
+        assert.equal(res.jsonData.data.totalProjects, 4);
+        assert.equal(res.jsonData.data.totalTestCases, 12);
+        assert.equal(res.jsonData.data.totalRuns, 10);
+        assert.equal(res.jsonData.data.passedRuns, 8);
+        assert.equal(res.jsonData.data.failedRuns, 2);
+        assert.equal(res.jsonData.data.passRate, 80);
+      } finally {
+        Project.countDocuments = origProjectCount;
+        TestCase.countDocuments = origTestCaseCount;
+        Run.countDocuments = origRunCount;
+      }
+    });
+
+    test('Handles totalRuns = 0 gracefully returning 0% passRate without NaN', async () => {
+      const { getRunStats } = await import('../src/controllers/run.controller.js');
+      const Project = (await import('../src/models/Project.js')).default;
+      const TestCase = (await import('../src/models/TestCase.js')).default;
+      const Run = (await import('../src/models/Run.js')).default;
+
+      const origProjectCount = Project.countDocuments;
+      const origTestCaseCount = TestCase.countDocuments;
+      const origRunCount = Run.countDocuments;
+
+      Project.countDocuments = async () => 0;
+      TestCase.countDocuments = async () => 0;
+      Run.countDocuments = async () => 0;
+
+      try {
+        const req = { user: { _id: userId } };
+        const res = createMockRes();
+
+        await getRunStats(req, res, () => {});
+
+        assert.equal(res.statusCode, 200);
+        assert.equal(res.jsonData.success, true);
+        assert.equal(res.jsonData.data.totalRuns, 0);
+        assert.equal(res.jsonData.data.passRate, 0);
+      } finally {
+        Project.countDocuments = origProjectCount;
+        TestCase.countDocuments = origTestCaseCount;
+        Run.countDocuments = origRunCount;
+      }
+    });
+  });
 });

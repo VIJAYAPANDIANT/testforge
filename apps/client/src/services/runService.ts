@@ -1,7 +1,18 @@
 import api from './api';
-import { ApiResponse, RunItem, RunDetailData } from '../types';
+import { ApiResponse, RunItem, RunDetailData, DashboardStats } from '../types';
 
 export const runService = {
+  /**
+   * Fetches aggregate real dashboard metrics for the authenticated user.
+   */
+  async getRunStats(): Promise<DashboardStats> {
+    const response = await api.get<ApiResponse<DashboardStats>>('/api/runs/stats');
+    if (!response.data.data) {
+      throw new Error('Failed to load dashboard statistics');
+    }
+    return response.data.data;
+  },
+
   /**
    * Triggers a new test case execution run.
    *
