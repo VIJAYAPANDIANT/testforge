@@ -103,9 +103,11 @@ const safeCreateRunResult = async (payload) => {
  * @param {object} params.testCase - Mongoose TestCase document or object
  * @param {object} [params.environment] - Optional Mongoose Environment document or object
  * @param {object|string} [params.user] - Authenticated user object or ID
+ * @param {string} [params.triggerSource='manual'] - Run trigger source ('manual' | 'webhook')
+ * @param {object} [params.triggerMetadata] - Optional metadata (branch, commit, repository, event, eventId)
  * @returns {Promise<{ statusCode?: number, success: boolean, data?: { runId: string, status: string, exitCode: number|null, stdout: string, stderr: string, durationMs: number, screenshotPath: string|null, signal?: string }, error?: string, message?: string, details?: any }>}
  */
-export const runTestCaseExecution = async ({ testCase, environment, user }) => {
+export const runTestCaseExecution = async ({ testCase, environment, user, triggerSource = 'manual', triggerMetadata = null }) => {
   if (!testCase || !testCase.dsl) {
     return {
       statusCode: 400,
@@ -152,6 +154,8 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
         user: userId,
         environment: environment?._id || environment?.id || null,
         status: 'queued',
+        triggerSource: triggerSource || 'manual',
+        ...(triggerMetadata ? { triggerMetadata } : {}),
       });
     } catch (dbErr) {
       console.error('[TestForge] Failed to create Run record in DB:', dbErr.message);
@@ -167,6 +171,8 @@ export const runTestCaseExecution = async ({ testCase, environment, user }) => {
       project: projectId,
       user: userId,
       status: 'queued',
+      triggerSource: triggerSource || 'manual',
+      triggerMetadata: triggerMetadata || null,
       startedAt: null,
       completedAt: null,
       durationMs: 0,

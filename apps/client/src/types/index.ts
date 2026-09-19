@@ -4,10 +4,19 @@ export interface User {
   email: string;
 }
 
+export interface AutoTestConfig {
+  enabled: boolean;
+  branch: string;
+  trigger: 'webhook';
+  webhookSecret: string;
+  testCaseIds: string[];
+}
+
 export interface Project {
   id: string;
   name: string;
   description?: string;
+  autoTest?: AutoTestConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -168,7 +177,18 @@ export interface SocketRunEventPayload {
   screenshotPath?: string | null;
 }
 
-// ─── Day 20 Run History & Detail Types ───────────────────────────────────────
+// ─── Day 20 & Day 26 Run History & Detail Types ─────────────────────────────────────
+
+export type TriggerSource = 'manual' | 'webhook';
+
+export interface TriggerMetadata {
+  branch?: string | null;
+  commit?: string | null;
+  repository?: string | null;
+  event?: string | null;
+  triggeredAt?: string | null;
+  eventId?: string | null;
+}
 
 export interface RunItem {
   id: string;
@@ -183,6 +203,8 @@ export interface RunItem {
   createdAt: string;
   exitCode?: number | null;
   screenshotPath?: string | null;
+  triggerSource?: TriggerSource;
+  triggerMetadata?: TriggerMetadata | null;
 }
 
 export interface RunStepResult {
@@ -222,6 +244,8 @@ export interface RunDetailData {
     stdout?: string;
     stderr?: string;
     screenshotPath?: string | null;
+    triggerSource?: TriggerSource;
+    triggerMetadata?: TriggerMetadata | null;
   };
   result: RunDetailResult | null;
 }

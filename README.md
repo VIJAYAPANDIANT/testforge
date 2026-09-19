@@ -167,17 +167,71 @@ npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspac
 
 ---
 
+## 🔄 Auto-Test on Update (Post-MVP)
+
+TestForge supports automatic test case execution triggered by external code updates or deployment events via a generic webhook endpoint.
+
+```
+Website Code Update / Deployment Event
+                  │
+                  ▼
+   Generic Webhook POST Request
+   (x-testforge-webhook-secret Header)
+                  │
+                  ▼
+       TestForge API Server
+       (Branch Filtering & Deduplication)
+                  │
+                  ▼
+       Reuses Execution Pipeline
+       (Playwright + Chromium Worker)
+                  │
+                  ▼
+     Live Socket.IO & Dashboard
+```
+
+### Webhook Endpoint & Payload Structure
+
+- **Endpoint**: `POST /api/webhooks/project/:projectId`
+- **Authentication**: `x-testforge-webhook-secret: <your_webhook_secret>`
+
+#### Example Webhook Request (cURL)
+```bash
+curl -X POST "http://localhost:5000/api/webhooks/project/66f1234567890abcdef11111" \
+  -H "Content-Type: application/json" \
+  -H "x-testforge-webhook-secret: 3f8a91b2c4e5d6f7890123456789abcd" \
+  -d '{
+    "event": "deployment",
+    "branch": "main",
+    "commit": "abc1234",
+    "repository": "myorg/myshop"
+  }'
+```
+
+#### Example Response (HTTP 202 Accepted)
+```json
+{
+  "success": true,
+  "message": "Automatic tests triggered",
+  "projectId": "66f1234567890abcdef11111",
+  "triggeredTests": 3,
+  "runIds": ["66f1234567890abcdef22222", "66f1234567890abcdef33333"]
+}
+```
+
+---
+
 ## ⚠️ MVP Limitations
 
 - **Browser Scope**: Headless Chromium browser automation.
 - **Execution Model**: Single-runner execution per worker process.
-- **Triggers**: Manual execution trigger via visual interface or REST API.
+- **Triggers**: Manual execution trigger & generic POST webhook trigger.
 
 ---
 
 ## 🔮 Future Roadmap
 
-- **Automatic Execution on Deployment**: Webhooks for GitHub/GitLab repository push events.
+- **Full CI/CD Provider Apps**: Native GitHub App and GitLab CI integration.
 - **Multi-Browser Support**: Firefox and WebKit browser execution environments.
 - **Parallel Execution**: Distributed worker queue for concurrent test suite runs.
 - **Test Scheduling**: Scheduled cron triggers for recurring automated health checks.

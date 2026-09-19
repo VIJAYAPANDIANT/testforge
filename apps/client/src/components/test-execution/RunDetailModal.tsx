@@ -188,6 +188,51 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Trigger Source & Webhook Metadata */}
+              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-medium">Trigger Source:</span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                      run.triggerSource === 'webhook'
+                        ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    }`}
+                  >
+                    {run.triggerSource === 'webhook' ? '⚡ Webhook Automatic Run' : '👤 Manual Execution'}
+                  </span>
+                </div>
+
+                {run.triggerSource === 'webhook' && run.triggerMetadata && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+                    {run.triggerMetadata.branch && (
+                      <div>
+                        <span className="text-slate-500 block">Branch</span>
+                        <span className="font-mono text-indigo-300 font-semibold">{run.triggerMetadata.branch}</span>
+                      </div>
+                    )}
+                    {run.triggerMetadata.commit && (
+                      <div>
+                        <span className="text-slate-500 block">Commit</span>
+                        <span className="font-mono text-slate-300">{run.triggerMetadata.commit}</span>
+                      </div>
+                    )}
+                    {run.triggerMetadata.repository && (
+                      <div>
+                        <span className="text-slate-500 block">Repository</span>
+                        <span className="font-mono text-slate-300 truncate block">{run.triggerMetadata.repository}</span>
+                      </div>
+                    )}
+                    {run.triggerMetadata.event && (
+                      <div>
+                        <span className="text-slate-500 block">Event</span>
+                        <span className="font-mono text-slate-300">{run.triggerMetadata.event}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Step Results Section */}
               <div className="space-y-3">
                 <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">

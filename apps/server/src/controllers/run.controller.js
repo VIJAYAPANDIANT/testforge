@@ -150,6 +150,8 @@ export const getRuns = async (req, res, next) => {
       createdAt: run.createdAt,
       exitCode: run.exitCode,
       screenshotPath: run.screenshotPath,
+      triggerSource: run.triggerSource || 'manual',
+      triggerMetadata: run.triggerMetadata || null,
     }));
 
     return res.status(200).json({

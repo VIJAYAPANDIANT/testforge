@@ -21,6 +21,32 @@ const projectSchema = new mongoose.Schema(
       required: [true, 'User owner is required'],
       index: true,
     },
+    autoTest: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      branch: {
+        type: String,
+        trim: true,
+        default: 'main',
+      },
+      trigger: {
+        type: String,
+        enum: ['webhook'],
+        default: 'webhook',
+      },
+      webhookSecret: {
+        type: String,
+        default: '',
+      },
+      testCaseIds: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'TestCase',
+        },
+      ],
+    },
   },
   {
     timestamps: true,

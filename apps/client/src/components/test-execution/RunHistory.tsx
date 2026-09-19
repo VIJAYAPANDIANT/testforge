@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   Loader2,
+  Webhook,
 } from 'lucide-react';
 import { RunItem } from '../../types';
 
@@ -64,6 +65,27 @@ export const RunHistory: React.FC<RunHistoryProps> = ({
           </span>
         );
     }
+  };
+
+  const getTriggerBadge = (triggerSource?: string) => {
+    if (triggerSource === 'webhook') {
+      return (
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 shrink-0"
+          title="Automatic Webhook Trigger"
+        >
+          <Webhook className="w-3 h-3" /> Webhook
+        </span>
+      );
+    }
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60 shrink-0"
+        title="Manual Run"
+      >
+        Manual
+      </span>
+    );
   };
 
   const formatDate = (dateStr: string) => {
@@ -156,7 +178,9 @@ export const RunHistory: React.FC<RunHistoryProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4 text-xs text-slate-400">
+              <div className="flex items-center space-x-3 text-xs text-slate-400">
+                {getTriggerBadge(run.triggerSource)}
+
                 {run.screenshotPath && (
                   <span
                     className="inline-flex items-center gap-1 text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"

@@ -29,10 +29,21 @@ export const projectService = {
     return response.data.data.project;
   },
 
-  updateProject: async (id: string, name?: string, description?: string): Promise<Project> => {
+  updateProject: async (
+    id: string,
+    name?: string,
+    description?: string,
+    autoTest?: {
+      enabled?: boolean;
+      branch?: string;
+      testCaseIds?: string[];
+      regenerateSecret?: boolean;
+    }
+  ): Promise<Project> => {
     const response = await api.patch<ApiResponse<{ project: Project }>>(`/api/projects/${id}`, {
       ...(name !== undefined ? { name } : {}),
       ...(description !== undefined ? { description } : {}),
+      ...(autoTest !== undefined ? { autoTest } : {}),
     });
     if (!response.data.success || !response.data.data?.project) {
       throw new Error(response.data.message || 'Failed to update project');

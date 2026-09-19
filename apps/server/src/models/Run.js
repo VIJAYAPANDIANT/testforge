@@ -64,6 +64,20 @@ const runSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    triggerSource: {
+      type: String,
+      enum: ['manual', 'webhook'],
+      default: 'manual',
+      index: true,
+    },
+    triggerMetadata: {
+      branch: { type: String, default: null },
+      commit: { type: String, default: null },
+      repository: { type: String, default: null },
+      event: { type: String, default: null },
+      triggeredAt: { type: Date, default: null },
+      eventId: { type: String, default: null, index: true },
+    },
   },
   {
     timestamps: true,

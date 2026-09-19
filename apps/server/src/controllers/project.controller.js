@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
+import crypto from 'node:crypto';
 import Project from '../models/Project.js';
+import TestCase from '../models/TestCase.js';
 
 /**
  * Format project output object
@@ -8,6 +10,23 @@ const formatProject = (project) => ({
   id: project._id,
   name: project.name,
   description: project.description,
+  autoTest: project.autoTest
+    ? {
+        enabled: Boolean(project.autoTest.enabled),
+        branch: project.autoTest.branch || 'main',
+        trigger: project.autoTest.trigger || 'webhook',
+        webhookSecret: project.autoTest.webhookSecret || '',
+        testCaseIds: (project.autoTest.testCaseIds || []).map((id) =>
+          id._id ? id._id.toString() : id.toString()
+        ),
+      }
+    : {
+        enabled: false,
+        branch: 'main',
+        trigger: 'webhook',
+        webhookSecret: '',
+        testCaseIds: [],
+      },
   createdAt: project.createdAt,
   updatedAt: project.updatedAt,
 });
@@ -45,10 +64,19 @@ export const createProject = async (req, res, next) => {
       });
     }
 
+    const initialSecret = crypto.randomBytes(16).toString('hex');
+
     const project = await Project.create({
       name: name.trim(),
       description: description ? description.trim() : '',
       user: req.user._id,
+      autoTest: {
+        enabled: false,
+        branch: 'main',
+        trigger: 'webhook',
+        webhookSecret: initialSecret,
+        testCaseIds: [],
+      },
     });
 
     return res.status(201).json({
@@ -135,8 +163,17 @@ export const updateProject = async (req, res, next) => {
       });
     }
 
-    // Explicitly reject updating disallowed fields (e.g. user, _id, createdAt, updatedAt)
-    const allowedFields = ['name', 'description'];
+    // Find existing project first to verify ownership & current settings
+    const existingProject = await Project.findOne({ _id: id, user: req.user._id });
+    if (!existingProject) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+    }
+
+    // Explicitly reject updating disallowed fields
+    const allowedFields = ['name', 'description', 'autoTest'];
     const bodyKeys = Object.keys(req.body || {});
     const disallowedKeys = bodyKeys.filter((key) => !allowedFields.includes(key));
 
@@ -147,7 +184,7 @@ export const updateProject = async (req, res, next) => {
       });
     }
 
-    const { name, description } = req.body;
+    const { name, description, autoTest } = req.body;
     const updates = {};
     const errors = [];
 
@@ -173,6 +210,37 @@ export const updateProject = async (req, res, next) => {
       }
     }
 
+    if (autoTest !== undefined && autoTest !== null) {
+      if (typeof autoTest !== 'object') {
+        errors.push('autoTest must be an object');
+      } else {
+        const currentAuto = existingProject.autoTest || {};
+        let webhookSecret = currentAuto.webhookSecret;
+        if (!webhookSecret || autoTest.regenerateSecret) {
+          webhookSecret = crypto.randomBytes(16).toString('hex');
+        }
+
+        let validTestIds = currentAuto.testCaseIds || [];
+        if (Array.isArray(autoTest.testCaseIds)) {
+          // Validate testCaseIds belong to this project
+          const candidateIds = autoTest.testCaseIds.filter((tid) => mongoose.Types.ObjectId.isValid(tid));
+          const projectTestCases = await TestCase.find({
+            _id: { $in: candidateIds },
+            project: existingProject._id,
+          }).select('_id');
+          validTestIds = projectTestCases.map((tc) => tc._id);
+        }
+
+        updates.autoTest = {
+          enabled: autoTest.enabled !== undefined ? Boolean(autoTest.enabled) : Boolean(currentAuto.enabled),
+          branch: typeof autoTest.branch === 'string' && autoTest.branch.trim() ? autoTest.branch.trim() : (currentAuto.branch || 'main'),
+          trigger: 'webhook',
+          webhookSecret,
+          testCaseIds: validTestIds,
+        };
+      }
+    }
+
     if (errors.length > 0) {
       return res.status(400).json({
         success: false,
@@ -181,24 +249,17 @@ export const updateProject = async (req, res, next) => {
       });
     }
 
-    const project = await Project.findOneAndUpdate(
+    const updatedProject = await Project.findOneAndUpdate(
       { _id: id, user: req.user._id },
       { $set: updates },
       { new: true, runValidators: true }
     );
 
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found',
-      });
-    }
-
     return res.status(200).json({
       success: true,
       message: 'Project updated successfully',
       data: {
-        project: formatProject(project),
+        project: formatProject(updatedProject),
       },
     });
   } catch (error) {

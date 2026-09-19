@@ -20,6 +20,7 @@ import {
   ChevronRight,
   RefreshCw,
   ExternalLink,
+  Webhook,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -275,9 +276,10 @@ export const DashboardPage: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-900/60 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-left bg-slate-900/60">
                       <th className="py-3 px-4">Test Case</th>
                       <th className="py-3 px-4">Project</th>
+                      <th className="py-3 px-4">Trigger</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Duration</th>
                       <th className="py-3 px-4 text-right">Date & Time</th>
@@ -298,6 +300,17 @@ export const DashboardPage: React.FC = () => {
                         </td>
                         <td className="py-3 px-4 text-slate-400">
                           {run.projectName || '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          {run.triggerSource === 'webhook' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                              <Webhook className="w-3 h-3" /> Webhook
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">
+                              Manual
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           {getStatusBadge(run.status)}
