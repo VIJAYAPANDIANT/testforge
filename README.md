@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="TestForge — Enterprise Test Automation Platform" width="100%" style="max-width: 320px; border-radius: 12px;" />
+  <img src="assets/banner.jpg" alt="TestForge — Enterprise Test Automation Platform" width="100%" style="max-width: 220px; border-radius: 10px;" />
 </p>
 
 <p align="center">
