@@ -93,12 +93,12 @@ TestForge converts visual test workflows into a structured JSON Domain Specific 
 
 ```mermaid
 graph TD
-    User["👤 User / QA Engineer"] -->|HTTP / React UI| Client["💻 React Frontend (apps/client)"]
-    GitHub["🐙 GitHub / CI/CD System"] -->|Webhook POST (HMAC SHA-256)| Server
+    User["👤 User / QA Engineer"] -->|"HTTP / React UI"| Client["💻 React Frontend (apps/client)"]
+    GitHub["🐙 GitHub / CI/CD System"] -->|"Webhook POST (HMAC SHA-256)"| Server["⚡ Express REST Server"]
 
     subgraph ServerApp ["apps/server Engine"]
-        Client -->|REST API / JWT| Server["⚡ Express REST Server"]
-        Client <-->|Socket.IO Events| SocketServer["📡 Socket.IO Realtime Server"]
+        Client -->|"REST API / JWT"| Server
+        Client <-->|"Socket.IO Events"| SocketServer["📡 Socket.IO Realtime Server"]
         Server --> Auth["🔒 Auth & Ownership Guard"]
         Server --> Mongo[("🍃 MongoDB Atlas")]
         Server --> Validator["✅ DSL Schema Validator (@testforge/dsl-schema)"]
@@ -107,13 +107,13 @@ graph TD
     end
 
     subgraph WorkerApp ["apps/worker Execution Engine"]
-        Server -->|spawn child process| Worker["🛠️ Playwright Worker CLI"]
-        Worker -->|Executes .spec.ts| Chromium["🌐 Headless Chromium"]
-        Chromium -->|On Failure| Screenshot["🖼️ Failure Screenshot Generator"]
+        Server -->|"spawn child process"| Worker["🛠️ Playwright Worker CLI"]
+        Worker -->|"Executes .spec.ts"| Chromium["🌐 Headless Chromium"]
+        Chromium -->|"On Failure"| Screenshot["🖼️ Failure Screenshot Generator"]
     end
 
-    Screenshot -->|PNG Files| Storage["📁 /uploads/screenshots"]
-    AIService -->|Sanitized Context| Gemini["🤖 Google Gemini 2.5 Flash"]
+    Screenshot -->|"PNG Files"| Storage["📁 /uploads/screenshots"]
+    AIService -->|"Sanitized Context"| Gemini["🤖 Google Gemini 2.5 Flash"]
 ```
 
 ---
