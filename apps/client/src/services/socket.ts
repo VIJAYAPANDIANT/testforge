@@ -19,11 +19,16 @@ let socket: Socket | null = null;
  */
 export const getSocket = (): Socket => {
   if (!socket) {
-    const token = localStorage.getItem('token');
-    // Default to port 5000 if VITE_API_URL is not set
-    const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    // Socket.io connection target base URL (without /api path)
+    const getDefaultSocketUrl = () => {
+      if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+      if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+        return 'https://testforge-server.vercel.app';
+      }
+      return 'http://localhost:5000';
+    };
+    const rawUrl = getDefaultSocketUrl();
     const socketUrl = rawUrl.replace(/\/api\/?$/, '');
+    const token = localStorage.getItem('token');
 
     socket = io(socketUrl, {
       auth: {

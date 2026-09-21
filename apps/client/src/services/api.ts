@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const getDefaultApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    return 'https://testforge-server.vercel.app';
+  }
+  return 'http://localhost:5000';
+};
+
+const BASE_URL = getDefaultApiUrl();
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -31,7 +41,7 @@ api.interceptors.response.use(
         ? error.response.data.errors.join(', ')
         : null) ||
       (error.code === 'ERR_NETWORK' || error.message === 'Network Error'
-        ? 'Network Error: Unable to connect to TestForge backend server at http://localhost:5000. Please check that the server is running.'
+        ? `Network Error: Unable to connect to TestForge backend server at ${BASE_URL}. Please check that the server is running.`
         : error.message) ||
       'An unexpected error occurred';
     return Promise.reject(new Error(message));
