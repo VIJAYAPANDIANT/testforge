@@ -65,6 +65,178 @@ TestForge converts visual test workflows into a structured JSON Domain Specific 
    - Automatic credential redaction (passwords, JWTs, Bearer headers, API keys sanitized to `<REDACTED>`).
    - Generative failure diagnosis powered by `gemini-2.5-flash`, providing structured JSON outputs (root cause, observed error, technical explanation, evidence, suggested investigation, and fix recommendations).
 
+### 🛡️ Non-Functional Requirements
+
+1. **Security & Data Isolation**:
+   - Passwords hashed using `bcryptjs` with salt factor 10.
+   - Resource access scoped strictly to authenticated owner (`req.user.id`).
+   - Server-side secret sanitization (`<REDACTED>`) before sending error contexts to external AI APIs (`GEMINI_API_KEY`).
+   - GitHub webhook HMAC SHA-256 signature validation with constant-time cryptographic comparison (`crypto.timingSafeEqual`).
+
+2. **Performance & Efficiency**:
+   - Sub-second execution latency for JSON DSL validation and Playwright TypeScript code generation.
+   - Non-blocking asynchronous child process execution (`child_process.spawn`) for headless Chromium test runs.
+   - Text output truncation (`50,000` chars max) to prevent MongoDB document bloating.
+   - MongoDB connection pooling & caching for serverless environments.
+
+3. **Reliability & Error Resilience**:
+   - Defensive fallback locator strategies (`role` ➔ `text` ➔ `css`) ensuring test resilience.
+   - Graceful AI service degradation returning structured fallbacks when Gemini API quotas are exhausted or offline.
+   - Zero-crash API error middleware handling Mongoose validation and duplicate key constraints.
+
+4. **Scalability & Monorepo Maintainability**:
+   - Modular npm workspaces monorepo architecture separating client, server, worker, and validation/codegen packages.
+   - Clean API contract interfaces between visual builder DSL, server REST endpoints, and Playwright execution workers.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+graph TB
+    subgraph ClientLayer["Frontend Client"]
+        User["User / QA Engineer"] -->|"HTTP / React UI"| ReactClient["React Frontend (apps/client)"]
+    end
+
+    subgraph ServerLayer["apps/server Engine"]
+        ReactClient -->|"REST API / JWT"| ExpressServer["Express REST Server"]
+        ReactClient -->|"Socket.IO Events"| SocketServer["Socket.IO Realtime Server"]
+        ExpressServer -->|"Auth & Ownership Guard"| AuthMiddleware["Auth & Ownership Guard"]
+        ExpressServer --> Database[(MongoDB Atlas)]
+        ExpressServer --> Validator["DSL Schema Validator (@testforge/dsl-schema)"]
+        ExpressServer --> Codegen["Codegen Engine (@testforge/codegen)"]
+        ExpressServer --> AIService["AI Analysis Service (Gemini)"]
+        AIService -->|"Sanitized Context"| GeminiAPI["Google Gemini 2.5 Flash"]
+    end
+
+    subgraph CILayer["GitHub / CI/CD"]
+        GitHub["GitHub / CI/CD System"] -->|"Webhook POST (HMAC SHA-256)"| ExpressServer
+    end
+
+    subgraph WorkerLayer["apps/worker Execution Engine"]
+        ExpressServer -->|"spawn child process"| WorkerCLI["Playwright Worker CLI"]
+        WorkerCLI -->|"Executes .spec.ts"| HeadlessChromium["Headless Chromium"]
+        HeadlessChromium -->|"On Failure"| ScreenshotGen["Failure Screenshot Generator"]
+        ScreenshotGen -->|"PNG Files"| UploadsFolder["/uploads/screenshots"]
+    end
+```
+
+---
+
+## 🎭 Use Case Diagram
+
+```mermaid
+graph LR
+    Tester(("Tester / User"))
+    GitHubCI(("GitHub / CI Pipeline"))
+
+    subgraph TestForgePlatform["TestForge Platform"]
+        UC1["Sign Up / Login (JWT)"]
+        UC2["Manage Projects"]
+        UC3["Build Test Case Visually"]
+        UC4["Configure Resilient Locators"]
+        UC5["Execute Playwright Test"]
+        UC6["View Real-Time Execution Console"]
+        UC7["View Run History & Screenshots"]
+        UC8["Configure Webhook & Auto-Test"]
+        UC9["Request AI Failure Analysis"]
+        UC10["Trigger Automated Run on Push"]
+    end
+
+    Tester --> UC1
+    Tester --> UC2
+    Tester --> UC3
+    Tester --> UC4
+    Tester --> UC5
+    Tester --> UC6
+    Tester --> UC7
+    Tester --> UC8
+    Tester --> UC9
+
+    GitHubCI --> UC10
+    UC10 --> UC5
+```
+
+---
+
+## 🗄️ Entity-Relationship (ER) Diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ PROJECT : owns
+    USER ||--o{ TEST_CASE : creates
+    USER ||--o{ RUN : triggers
+    PROJECT ||--o{ TEST_CASE : contains
+    PROJECT ||--o{ ENVIRONMENT : configures
+    TEST_CASE ||--o{ RUN : executes
+    RUN ||--|| RUN_RESULT : produces
+
+    USER {
+        string _id PK
+        string name
+        string email UK
+        string password
+        date createdAt
+    }
+
+    PROJECT {
+        string _id PK
+        string name
+        string description
+        string repositoryUrl
+        boolean autoTestEnabled
+        string autoTestBranch
+        string webhookSecret
+        string user FK
+        date createdAt
+    }
+
+    ENVIRONMENT {
+        string _id PK
+        string name
+        string baseUrl
+        string project FK
+        string user FK
+        date createdAt
+    }
+
+    TEST_CASE {
+        string _id PK
+        string name
+        string description
+        json dsl
+        string project FK
+        string user FK
+        date createdAt
+    }
+
+    RUN {
+        string _id PK
+        string testCase FK
+        string project FK
+        string user FK
+        string environment FK
+        string status "queued | running | passed | failed"
+        string triggerSource "manual | webhook | auto"
+        json triggerMetadata
+        date startedAt
+        date completedAt
+    }
+
+    RUN_RESULT {
+        string _id PK
+        string run FK
+        string status "passed | failed"
+        number exitCode
+        number durationMs
+        string stdout
+        string stderr
+        string screenshotPath
+        json aiAnalysis
+        date analyzedAt
+    }
+```
+
 ---
 
 ## 🧩 Module Description
