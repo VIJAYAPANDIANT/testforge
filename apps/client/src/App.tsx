@@ -9,12 +9,16 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { TestCaseDetailPage } from './pages/TestCaseDetailPage';
+import { LandingPage } from './pages/LandingPage';
 
 export const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+
           {/* Public Authentication Routes */}
           <Route element={<PublicOnlyRoute />}>
             <Route path="/login" element={<LoginPage />} />
@@ -32,9 +36,8 @@ export const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* Default Navigation Redirects */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Default Fallback Redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
