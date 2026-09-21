@@ -14,14 +14,23 @@ const connectDB = async () => {
     return isConnecting;
   }
 
-  const uri =
-    process.env.MONGODB_URI &&
-    process.env.MONGODB_URI !== 'your_mongodb_connection_string'
-      ? process.env.MONGODB_URI
-      : 'mongodb://127.0.0.1:27017/testforge';
+  const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+  const hasEnvUri = process.env.MONGODB_URI && process.env.MONGODB_URI !== 'your_mongodb_connection_string';
+
+  if (!hasEnvUri && isProd) {
+    const missingErr = new Error('MONGODB_URI environment variable is not configured in Vercel project settings.');
+    console.error(`MongoDB connection error: ${missingErr.message}`);
+    throw missingErr;
+  }
+
+  const uri = hasEnvUri
+    ? process.env.MONGODB_URI
+    : 'mongodb://127.0.0.1:27017/testforge';
 
   try {
-    isConnecting = mongoose.connect(uri);
+    isConnecting = mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+    });
     const conn = await isConnecting;
     console.log('MongoDB connected successfully');
     console.log(`Database host: ${conn.connection.host}`);
@@ -29,7 +38,7 @@ const connectDB = async () => {
   } catch (error) {
     isConnecting = null;
     console.error(`MongoDB connection error: ${error.message}`);
-    throw error;
+    throw new Error(`Database connection failed (${error.message}). Please check MONGODB_URI in Vercel settings and allow 0.0.0.0/0 in MongoDB Atlas Network Access.`);
   }
 };
 
