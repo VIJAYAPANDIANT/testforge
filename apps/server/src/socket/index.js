@@ -12,10 +12,16 @@ let ioInstance = null;
  */
 export const initSocketServer = (httpServer) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const parsedOrigins = clientUrl.includes(',')
+    ? clientUrl.split(',').map((o) => o.trim())
+    : [clientUrl];
+  const allowedOrigins = Array.from(
+    new Set([...parsedOrigins, 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'])
+  );
 
   ioInstance = new Server(httpServer, {
     cors: {
-      origin: clientUrl,
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },
