@@ -16,7 +16,7 @@ export const initSocketServer = (httpServer) => {
     ? clientUrl.split(',').map((o) => o.trim())
     : [clientUrl];
   const allowedOrigins = Array.from(
-    new Set([...parsedOrigins, 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'])
+    new Set([...parsedOrigins, 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://testforge-client.vercel.app'])
   );
 
   ioInstance = new Server(httpServer, {

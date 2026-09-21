@@ -33,12 +33,12 @@ app.use(
   })
 );
 
-// CORS configuration supporting single or comma-separated origins plus local dev fallbacks
+// CORS configuration supporting single or comma-separated origins plus local dev & production Vercel fallbacks
 const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 const parsedOrigins = clientOrigin.includes(',')
   ? clientOrigin.split(',').map((o) => o.trim())
   : [clientOrigin];
-const devOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+const devOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://testforge-client.vercel.app'];
 const allowedOrigins = Array.from(new Set([...parsedOrigins, ...devOrigins]));
 
 app.use(
