@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="TestForge — Enterprise Test Automation Platform" width="100%" style="max-width: 80px; border-radius: 8px;" />
+  <img src="assets/banner.jpg" alt="TestForge — Enterprise Test Automation Platform" width="100%" style="max-width: 50px; border-radius: 5px;" />
 </p>
 
 <p align="center">
@@ -291,21 +291,25 @@ erDiagram
 ## 🎨 UI Design & Workflows
 
 ### 1. Landing Page (`/`)
+
 - **Header Navigation**: Brand logo, navigation anchors, and direct `[ Sign In ]` / `[ Sign Up ]` / `[ Go to Dashboard ]` buttons.
 - **Hero & Badge Banner**: Glowing status badges (`117/117 Passed`, `Socket.IO`, `Playwright`, `Gemini 2.5 Flash`).
 - **Start-to-End Workflow**: 4-card interactive workflow guide (Visual Builder ➔ Codegen ➔ Headless Execution ➔ AI Diagnosis).
 
 ### 2. Dashboard View (`/dashboard`)
+
 - **Header & Filter Bar**: Welcome banner with user greeting, project context filter dropdown (`All Projects` or specific project), and `[Refresh]` button.
 - **Auto-Test Summary Banner**: Prominently displays selected project Auto-Test configuration (`Enabled`/`Disabled`), provider (`GitHub Webhook` / `Generic Webhook`), target repository, monitored branch, configured test count, and `[Configure Settings]` link.
 - **8 Metric Overview Cards**: `Total Projects`, `Test Cases`, `Total Runs`, `Overall Pass Rate %`, `Automatic Runs`, `Auto Pass Rate %`, `Auto Passed`, `Auto Failed`.
 
 ### 3. Visual Test Builder Canvas (`/projects/:projectId/test-cases/:testCaseId`)
+
 - **Action Blocks Palette**: Click or drag to add `Navigate`, `Click`, `Fill`, `Assert Visible`, `Assert Text`, `Wait`, or `Screenshot` steps.
 - **Step Property Inspector**: Edit step target locator strategy (`role`, `text`, `css`), value, timeout, and fallback locator properties.
 - **Toolbar**: `[ Save Test Case ]`, `[ Run Test ]`, step reordering handles, step duplication, step deletion, and instant DSL validation indicator.
 
 ### 4. Run Detail & AI Failure Analysis Modal
+
 - **Execution Overview**: Duration, Exit Code, Started At, Completed At, Trigger Source & Webhook Metadata badges.
 - **AI Failure Analysis Card** (Failed Runs Only):
   - `[ 🪄 Analyze Failure ]` action button.
