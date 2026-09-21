@@ -30,7 +30,9 @@ api.interceptors.response.use(
       (Array.isArray(error.response?.data?.errors)
         ? error.response.data.errors.join(', ')
         : null) ||
-      error.message ||
+      (error.code === 'ERR_NETWORK' || error.message === 'Network Error'
+        ? 'Network Error: Unable to connect to TestForge backend server at http://localhost:5000. Please check that the server is running.'
+        : error.message) ||
       'An unexpected error occurred';
     return Promise.reject(new Error(message));
   }
