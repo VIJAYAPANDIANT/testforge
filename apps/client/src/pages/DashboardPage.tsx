@@ -288,106 +288,130 @@ export const DashboardPage: React.FC = () => {
       {/* Aggregate Metric Cards Grid (8 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Total Projects */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Projects</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Projects</span>
+              <p className="text-[10px] text-slate-500">Active workspaces</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
               <FolderGit2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-100">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.totalProjects ?? projects.length}
+          <div className="text-2xl font-bold text-slate-100 font-mono">
+            {loading ? <div className="h-8 w-16 bg-slate-800/80 rounded animate-pulse" /> : stats?.totalProjects ?? projects.length}
           </div>
         </div>
 
         {/* 2. Total Test Cases */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Test Cases</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Test Cases</span>
+              <p className="text-[10px] text-slate-500">Visual test suites</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
               <FileCode className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-100">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.totalTestCases ?? 0}
+          <div className="text-2xl font-bold text-slate-100 font-mono">
+            {loading ? <div className="h-8 w-16 bg-slate-800/80 rounded animate-pulse" /> : stats?.totalTestCases ?? 0}
           </div>
         </div>
 
         {/* 3. Total Runs */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Runs</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Runs</span>
+              <p className="text-[10px] text-slate-500">All executions</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
               <PlayCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-slate-100">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.totalRuns ?? 0}
+          <div className="text-2xl font-bold text-slate-100 font-mono">
+            {loading ? <div className="h-8 w-16 bg-slate-800/80 rounded animate-pulse" /> : stats?.totalRuns ?? 0}
           </div>
         </div>
 
         {/* 4. Overall Pass Rate */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Overall Pass Rate</span>
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Overall Pass Rate</span>
+              <p className="text-[10px] text-slate-500">Suite success ratio</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-cyan-300">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : `${stats?.passRate ?? 0}%`}
+          <div className="text-2xl font-bold text-cyan-300 font-mono">
+            {loading ? <div className="h-8 w-20 bg-slate-800/80 rounded animate-pulse" /> : `${stats?.passRate ?? 0}%`}
           </div>
         </div>
 
         {/* 5. Automatic Runs */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-purple-500/30 hover:border-purple-500/50 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-purple-500/30 hover:border-purple-500/50 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Automatic Runs</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Automatic Runs</span>
+              <p className="text-[10px] text-purple-400/70">Webhook triggers</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
               <Zap className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-purple-300">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.autoRuns ?? 0}
+          <div className="text-2xl font-bold text-purple-300 font-mono">
+            {loading ? <div className="h-8 w-16 bg-slate-800/80 rounded animate-pulse" /> : stats?.autoRuns ?? 0}
           </div>
         </div>
 
         {/* 6. Auto Pass Rate */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-purple-500/30 hover:border-purple-500/50 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-purple-500/30 hover:border-purple-500/50 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Auto Pass Rate</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Auto Pass Rate</span>
+              <p className="text-[10px] text-purple-400/70">CI/CD success ratio</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-purple-300">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : `${stats?.autoPassRate ?? 0}%`}
+          <div className="text-2xl font-bold text-purple-300 font-mono">
+            {loading ? <div className="h-8 w-20 bg-slate-800/80 rounded animate-pulse" /> : `${stats?.autoPassRate ?? 0}%`}
           </div>
         </div>
 
         {/* 7. Auto Passed */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Auto Passed</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Auto Passed</span>
+              <p className="text-[10px] text-slate-500">Zero error runs</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-emerald-400">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.autoPassedRuns ?? 0}
+          <div className="text-2xl font-bold text-emerald-400 font-mono">
+            {loading ? <div className="h-8 w-16 bg-slate-800/80 rounded animate-pulse" /> : stats?.autoPassedRuns ?? 0}
           </div>
         </div>
 
         {/* 8. Auto Failed */}
-        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all">
+        <div className="card p-4 flex flex-col justify-between space-y-3 bg-[#111827]/90 border-slate-800 hover:border-slate-700 transition-all rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Auto Failed</span>
-            <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Auto Failed</span>
+              <p className="text-[10px] text-slate-500">Diagnosed by AI</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
               <XCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-red-400">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-500" /> : stats?.autoFailedRuns ?? 0}
+          <div className="text-2xl font-bold text-red-400 font-mono">
+            {loading ? <div className="h-8 w-16 bg-slate-800/80 rounded animate-pulse" /> : stats?.autoFailedRuns ?? 0}
           </div>
         </div>
       </div>

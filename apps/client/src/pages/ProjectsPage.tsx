@@ -3,12 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import { projectService } from '../services/projectService';
 import { Project } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { FolderGit2, Plus, ArrowRight, Loader2, AlertCircle, X, Edit2, Trash2 } from 'lucide-react';
+import {
+  FolderGit2,
+  Plus,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+  X,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  PlayCircle,
+  FileCode,
+  Calendar,
+  Webhook,
+  Zap,
+} from 'lucide-react';
 
 export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Create/Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,14 +99,17 @@ export const ProjectsPage: React.FC = () => {
           description.trim()
         );
         setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        setSuccessMessage(`Project "${updated.name}" updated successfully.`);
       } else {
         const newProject = await projectService.createProject(name.trim(), description.trim());
         setProjects((prev) => [newProject, ...prev]);
+        setSuccessMessage(`Project "${newProject.name}" created successfully.`);
       }
       setIsModalOpen(false);
       setName('');
       setDescription('');
       setEditingProject(null);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       setModalError(err.message || 'Failed to save project.');
     } finally {
@@ -105,7 +124,9 @@ export const ProjectsPage: React.FC = () => {
       setIsDeleting(true);
       await projectService.deleteProject(deletingProject.id);
       setProjects((prev) => prev.filter((p) => p.id !== deletingProject.id));
+      setSuccessMessage(`Project "${deletingProject.name}" deleted successfully.`);
       setDeletingProject(null);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       setError(err.message || 'Failed to delete project.');
       setDeletingProject(null);
@@ -119,8 +140,15 @@ export const ProjectsPage: React.FC = () => {
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Projects</h1>
-          <p className="text-sm text-slate-400">Manage your test automation projects.</p>
+          <h1 className="text-2xl font-bold text-slate-100 flex items-center space-x-2">
+            <span>Projects</span>
+            <span className="text-xs font-mono font-medium text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+              {projects.length}
+            </span>
+          </h1>
+          <p className="text-sm text-slate-400">
+            Manage your test automation projects, configure webhook triggers, and execute suites.
+          </p>
         </div>
 
         <button
@@ -132,30 +160,93 @@ export const ProjectsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="card flex items-center justify-center py-16 text-slate-400 space-x-3">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-          <span>Loading projects...</span>
+      {/* Success Alert Banner */}
+      {successMessage && (
+        <div className="flex items-center space-x-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successMessage}</span>
         </div>
-      ) : error ? (
-        <div className="card flex items-center space-x-3 text-red-400 border-red-500/30 bg-red-500/10">
+      )}
+
+      {/* Error Alert Banner */}
+      {error && (
+        <div className="flex items-center space-x-3 p-4 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl text-xs">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
+      )}
+
+      {/* Main Content Area */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="card p-6 bg-[#111827]/80 border-slate-800 space-y-4 animate-pulse rounded-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800" />
+                  <div className="h-5 w-36 bg-slate-800 rounded" />
+                </div>
+                <div className="h-5 w-12 bg-slate-800 rounded" />
+              </div>
+              <div className="h-3 w-3/4 bg-slate-800 rounded" />
+              <div className="h-3 w-1/2 bg-slate-800 rounded" />
+              <div className="pt-3 border-t border-slate-800/80 flex justify-between">
+                <div className="h-3 w-24 bg-slate-800 rounded" />
+                <div className="h-3 w-20 bg-slate-800 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : projects.length === 0 ? (
-        <div className="card text-center py-16 space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 text-slate-400">
-            <FolderGit2 className="w-6 h-6" />
+        <div className="card text-center py-16 px-6 space-y-6 border border-dashed border-slate-800 bg-[#111827]/60 rounded-2xl max-w-3xl mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
+            <FolderGit2 className="w-8 h-8" />
           </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-slate-200">No projects yet</h3>
-            <p className="text-sm text-slate-400">Create your first project to start automating tests.</p>
+
+          <div className="space-y-2 max-w-lg mx-auto">
+            <h3 className="text-xl font-bold text-slate-100">No Projects Created Yet</h3>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Projects organize your visual test suites, automated Playwright execution runs, and GitHub webhook CI/CD triggers for a specific application or domain.
+            </p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary text-sm">
-            <Plus className="w-4 h-4" />
-            <span>Create Project</span>
-          </button>
+
+          {/* Workflow Hint Banner */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 max-w-xl mx-auto text-left space-y-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-slate-400">
+              Automation Workflow
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1">
+              <div className="p-2 bg-slate-950/70 rounded-lg border border-slate-800 flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+                <span className="font-semibold text-slate-200 truncate">Create Project</span>
+              </div>
+              <div className="p-2 bg-slate-950/70 rounded-lg border border-slate-800 flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+                <span className="font-semibold text-slate-200 truncate">Add Test Case</span>
+              </div>
+              <div className="p-2 bg-slate-950/70 rounded-lg border border-slate-800 flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
+                <span className="font-semibold text-slate-200 truncate">Build Steps</span>
+              </div>
+              <div className="p-2 bg-slate-950/70 rounded-lg border border-slate-800 flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] flex items-center justify-center shrink-0">4</span>
+                <span className="font-semibold text-slate-200 truncate">Run Test</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button
+              onClick={openCreateModal}
+              className="btn-primary text-xs sm:text-sm px-6 py-2.5 inline-flex items-center space-x-2 shadow-lg shadow-blue-600/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Your First Project</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -163,29 +254,49 @@ export const ProjectsPage: React.FC = () => {
             <div
               key={project.id}
               onClick={() => navigate(`/projects/${project.id}`)}
-              className="card hover:border-blue-500/50 transition-all duration-200 space-y-3 group cursor-pointer relative"
+              className="card p-5 bg-[#111827]/90 border-slate-800 hover:border-blue-500/50 transition-all duration-200 space-y-3 group cursor-pointer relative rounded-2xl"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
                     <FolderGit2 className="w-5 h-5" />
                   </div>
-                  <h2 className="text-base font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
-                    {project.name}
-                  </h2>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
+                      {project.name}
+                    </h2>
+                    <div className="flex items-center space-x-2 pt-0.5">
+                      {project.autoTest?.enabled ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                          <Webhook className="w-2.5 h-2.5" />
+                          <span>{project.autoTest.provider === 'github' ? 'GitHub Auto-Test' : 'Webhook Active'}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                          Manual Trigger
+                        </span>
+                      )}
+
+                      {project.autoTest?.testCaseIds && project.autoTest.testCaseIds.length > 0 && (
+                        <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 font-mono">
+                          {project.autoTest.testCaseIds.length} auto-run
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 shrink-0">
                   <button
                     onClick={(e) => openEditModal(e, project)}
-                    className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
                     title="Edit Project"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={(e) => openDeleteModal(e, project)}
-                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-md transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
                     title="Delete Project"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -194,13 +305,19 @@ export const ProjectsPage: React.FC = () => {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-400 line-clamp-2 pl-12">
+              <p className="text-xs text-slate-400 line-clamp-2">
                 {project.description || 'No description provided for this project.'}
               </p>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-slate-800/80 pl-12">
-                <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
-                <span className="text-blue-400 group-hover:underline">Open Project &rarr;</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-slate-800/80">
+                <span className="flex items-center space-x-1">
+                  <Calendar className="w-3 h-3 text-slate-500" />
+                  <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
+                </span>
+                <span className="text-blue-400 font-semibold group-hover:underline flex items-center space-x-1">
+                  <span>Open Project</span>
+                  <span>&rarr;</span>
+                </span>
               </div>
             </div>
           ))}
