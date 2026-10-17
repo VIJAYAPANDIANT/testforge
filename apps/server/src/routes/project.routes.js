@@ -21,6 +21,7 @@ router.post('/', createProject);
 router.get('/', getProjects);
 router.get('/:id', validateObjectId('id', 'Project'), getProjectById);
 router.patch('/:id', validateObjectId('id', 'Project'), updateProject);
+router.put('/:id', validateObjectId('id', 'Project'), updateProject);
 router.delete('/:id', validateObjectId('id', 'Project'), deleteProject);
 
 // Nested Test Case routes within a project

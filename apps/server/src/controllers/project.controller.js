@@ -242,10 +242,14 @@ export const updateProject = async (req, res, next) => {
             ? autoTest.provider
             : currentAuto.provider || 'generic';
 
-        const githubRepo =
+        const rawGithubRepo =
           autoTest.github && typeof autoTest.github.repository === 'string'
             ? autoTest.github.repository.trim()
             : currentAuto.github?.repository || '';
+        const githubRepo = rawGithubRepo
+          .replace(/^https?:\/\/github\.com\//i, '')
+          .replace(/\.git$/i, '')
+          .replace(/^\/+|\/+$/g, '');
 
         updates.autoTest = {
           enabled: autoTest.enabled !== undefined ? Boolean(autoTest.enabled) : Boolean(currentAuto.enabled),

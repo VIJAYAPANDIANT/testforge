@@ -45,6 +45,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [autoSecret, setAutoSecret] = useState('');
   const [isSavingAutoTest, setIsSavingAutoTest] = useState(false);
   const [autoSaveMessage, setAutoSaveMessage] = useState<string | null>(null);
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
   const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
@@ -70,6 +71,14 @@ export const ProjectDetailPage: React.FC = () => {
   // Delete Test Case Modal State
   const [deletingTestCase, setDeletingTestCase] = useState<TestCase | null>(null);
   const [isDeletingTc, setIsDeletingTc] = useState(false);
+
+  const cleanRepoName = (val: string) => {
+    return val
+      .trim()
+      .replace(/^https?:\/\/github\.com\//i, '')
+      .replace(/\.git$/i, '')
+      .replace(/^\/+|\/+$/g, '');
+  };
 
   const fetchData = async () => {
     if (!projectId) return;
@@ -108,6 +117,10 @@ export const ProjectDetailPage: React.FC = () => {
     try {
       setIsSavingAutoTest(true);
       setAutoSaveMessage(null);
+      setAutoSaveError(null);
+      const normalizedRepo = autoProvider === 'github' ? cleanRepoName(githubRepo) : githubRepo;
+      setGithubRepo(normalizedRepo);
+
       const updated = await projectService.updateProject(
         project.id,
         undefined,
@@ -117,7 +130,7 @@ export const ProjectDetailPage: React.FC = () => {
           branch: autoBranch,
           provider: autoProvider,
           github: {
-            repository: githubRepo,
+            repository: normalizedRepo,
           },
           testCaseIds: autoTestIds,
           regenerateSecret,
@@ -137,7 +150,7 @@ export const ProjectDetailPage: React.FC = () => {
       );
       setTimeout(() => setAutoSaveMessage(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update Auto-Test settings');
+      setAutoSaveError(err.message || 'Failed to update Auto-Test settings');
     } finally {
       setIsSavingAutoTest(false);
     }
@@ -450,6 +463,23 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
         )}
 
+        {autoSaveError && (
+          <div className="p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{autoSaveError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAutoSaveError(null)}
+              className="text-red-400 hover:text-red-300 ml-2 p-1 rounded"
+              title="Dismiss error"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Provider Selector Tabs */}
         <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-3">
           <span className="text-xs font-medium text-slate-400 mr-2">Trigger Provider:</span>
@@ -489,6 +519,7 @@ export const ProjectDetailPage: React.FC = () => {
                   type="text"
                   value={githubRepo}
                   onChange={(e) => setGithubRepo(e.target.value)}
+                  onBlur={() => setGithubRepo(cleanRepoName(githubRepo))}
                   placeholder="e.g. VIJAYAPANDIANT/testforge-demo"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
                 />

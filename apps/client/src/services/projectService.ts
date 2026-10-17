@@ -44,7 +44,7 @@ export const projectService = {
       regenerateSecret?: boolean;
     }
   ): Promise<Project> => {
-    const response = await api.patch<ApiResponse<{ project: Project }>>(`/api/projects/${id}`, {
+    const response = await api.put<ApiResponse<{ project: Project }>>(`/api/projects/${id}`, {
       ...(name !== undefined ? { name } : {}),
       ...(description !== undefined ? { description } : {}),
       ...(autoTest !== undefined ? { autoTest } : {}),
