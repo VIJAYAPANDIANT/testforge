@@ -27,6 +27,7 @@ import {
   Filter,
   ShieldCheck,
   Zap,
+  Activity,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -122,21 +123,28 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Welcome & Filter Bar */}
-      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-slate-950 border border-blue-500/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
-        <div className="space-y-1 max-w-xl">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center space-x-2">
+      <div className="bg-gradient-to-r from-blue-950/70 via-slate-900 to-slate-950 border border-blue-500/30 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+        {/* Subtle accent glow */}
+        <div className="absolute -top-12 -left-12 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="space-y-1.5 max-w-xl relative z-10">
+          <div className="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-mono uppercase tracking-wider font-bold">
+            <Activity className="w-3 h-3" />
+            <span>Workspace Operations</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 flex items-center space-x-2 tracking-tight">
             <span>Welcome back,</span>
-            <span className="text-blue-400">{user?.name || 'Tester'}</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400">{user?.name || 'Tester'}</span>
             <span>! 👋</span>
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm">
-            Monitor real-time Playwright execution metrics, auto-test update triggers, and project health.
+          <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+            Monitor real-time Playwright execution metrics, auto-test update triggers, and project health from a single pane.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0 self-end md:self-center">
+        <div className="flex flex-wrap items-center gap-3 shrink-0 self-end md:self-center relative z-10">
           {/* Project Selector Filter */}
-          <div className="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300">
+          <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 hover:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 transition-colors shadow-inner">
             <Filter className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <span className="text-slate-400 font-medium hidden sm:inline">Project:</span>
             <select
@@ -156,7 +164,7 @@ export const DashboardPage: React.FC = () => {
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="btn-secondary text-xs flex items-center space-x-1.5 py-2 px-3"
+            className="btn-secondary text-xs flex items-center space-x-1.5 py-2 px-3.5 shadow-sm hover:border-slate-600 transition-all focus-visible:ring-2 focus-visible:ring-blue-500"
             title="Refresh Dashboard Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
@@ -165,10 +173,10 @@ export const DashboardPage: React.FC = () => {
 
           <Link
             to="/projects"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center space-x-2 shadow-lg shadow-blue-600/20"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-all flex items-center space-x-2 shadow-lg shadow-blue-600/20 focus-visible:ring-2 focus-visible:ring-blue-400"
           >
-            <FolderGit2 className="w-4 h-4" />
-            <span>Projects</span>
+            <Plus className="w-4 h-4" />
+            <span>New Project</span>
           </Link>
         </div>
       </div>
