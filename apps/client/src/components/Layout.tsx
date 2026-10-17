@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { PlaySquare, LayoutDashboard, FolderGit2, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
+import { PlaySquare, LayoutDashboard, FolderGit2, LogOut, User as UserIcon, Menu, X, Home } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -15,12 +15,27 @@ export const Layout: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Left Brand & Nav Links */}
             <div className="flex items-center space-x-8">
-              <Link to="/dashboard" className="flex items-center space-x-3 text-blue-400 font-bold text-xl tracking-tight group">
+              <Link to="/" className="flex items-center space-x-3 text-blue-400 font-bold text-xl tracking-tight group" title="TestForge Home">
                 <img src="/logo.jpg" alt="TestForge Logo" className="w-8 h-8 rounded-lg border border-blue-500/30 object-cover shadow-sm group-hover:border-blue-500/60 transition-colors" />
                 <span className="text-slate-100 font-extrabold group-hover:text-blue-400 transition-colors">TestForge</span>
               </Link>
 
               <nav className="hidden md:flex items-center space-x-1">
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) =>
+                    `flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm'
+                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    }`
+                  }
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Home</span>
+                </NavLink>
+
                 <NavLink
                   to="/dashboard"
                   className={({ isActive }) =>
@@ -92,6 +107,20 @@ export const Layout: React.FC = () => {
             </div>
 
             <nav className="space-y-1">
+              <NavLink
+                to="/"
+                end
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center space-x-2.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
+                    isActive ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30' : 'text-slate-300 hover:bg-slate-800'
+                  }`
+                }
+              >
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </NavLink>
+
               <NavLink
                 to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}

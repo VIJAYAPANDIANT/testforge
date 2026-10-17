@@ -48,9 +48,13 @@ export const SignupPage: React.FC = () => {
       <div className="w-full max-w-md bg-[#111827] border border-slate-800 rounded-xl p-8 shadow-2xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 mb-2">
-            <PlaySquare className="w-6 h-6" />
-          </div>
+          <Link to="/" className="inline-flex items-center justify-center mb-1 group" title="Return to Home">
+            <img
+              src="/logo.jpg"
+              alt="TestForge Logo"
+              className="w-12 h-12 rounded-xl border border-blue-500/30 object-cover shadow-md group-hover:border-blue-500/60 transition-colors"
+            />
+          </Link>
           <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Create Account</h1>
           <p className="text-sm text-slate-400">Join TestForge Automation Platform</p>
         </div>
