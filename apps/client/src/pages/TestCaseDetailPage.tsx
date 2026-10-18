@@ -23,6 +23,9 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  AlertTriangle,
+  Server,
+  Terminal,
   X,
   Edit2,
   Trash2,
@@ -47,6 +50,7 @@ export const TestCaseDetailPage: React.FC = () => {
   const [runState, setRunState] = useState<LiveRunState | null>(null);
   const [isRunningTest, setIsRunningTest] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [workerNotice, setWorkerNotice] = useState<{ message: string; details?: string } | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   // Run History & Detail State (Day 20)
@@ -148,6 +152,7 @@ export const TestCaseDetailPage: React.FC = () => {
     try {
       setIsRunningTest(true);
       setRunError(null);
+      setWorkerNotice(null);
 
       // Initialize pending steps array for live tracking UI
       const initialSteps: StepExecutionState[] = testCase.dsl.steps.map((step, idx) => ({
@@ -268,6 +273,20 @@ export const TestCaseDetailPage: React.FC = () => {
         }
       });
     } catch (err: any) {
+      const isWorkerUnavailable =
+        err.code === 'WORKER_UNAVAILABLE' ||
+        err.status === 503 ||
+        (err.message && err.message.toLowerCase().includes('serverless')) ||
+        (err.message && err.message.toLowerCase().includes('worker instance')) ||
+        (err.message && err.message.toLowerCase().includes('worker cli'));
+
+      if (isWorkerUnavailable) {
+        setWorkerNotice({
+          message: err.message || 'Playwright worker unavailable in this environment.',
+          details: err.details,
+        });
+      }
+
       setRunError(err.message || 'Failed to start test execution.');
       setIsRunningTest(false);
       setRunState(null);
@@ -454,8 +473,64 @@ export const TestCaseDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Worker Unavailable Serverless Guidance Banner */}
+      {workerNotice && (
+        <div className="p-5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-xl space-y-3.5 text-slate-200">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-3">
+              <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-amber-300">
+                  Playwright Worker Required for Browser Automation
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {workerNotice.details || workerNotice.message}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setWorkerNotice(null)}
+              className="text-slate-400 hover:text-slate-200 p-1"
+              title="Dismiss notice"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1.5">
+              <div className="text-[11px] font-semibold text-emerald-400 flex items-center space-x-1.5">
+                <Terminal className="w-3.5 h-3.5" />
+                <span>Option A: Run Locally (Full Chromium)</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Execute browser tests locally on your machine with full Chromium rendering and live screenshots:
+              </p>
+              <pre className="px-2 py-1 bg-black/60 text-emerald-300 rounded text-[11px] font-mono select-all">
+                npm run dev:all
+              </pre>
+            </div>
+
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1.5">
+              <div className="text-[11px] font-semibold text-blue-400 flex items-center space-x-1.5">
+                <Server className="w-3.5 h-3.5" />
+                <span>Option B: Connect Dedicated Worker</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Deploy <code className="text-slate-300">apps/worker</code> to Docker, Render, or Railway and configure:
+              </p>
+              <pre className="px-2 py-1 bg-black/60 text-blue-300 rounded text-[11px] font-mono select-all">
+                WORKER_SERVICE_URL=https://...
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Execution Trigger Error Banner */}
-      {runError && (
+      {runError && !workerNotice && (
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center space-x-2.5">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{runError}</span>

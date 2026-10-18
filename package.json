@@ -11,6 +11,7 @@
     "dev": "npm run dev --workspace=apps/server",
     "dev:server": "npm run dev --workspace=apps/server",
     "dev:client": "npm run dev --workspace=apps/client",
+    "dev:worker": "npm run start --workspace=apps/worker",
     "dev:all": "npm run dev --workspaces --if-present",
     "start": "npm run start --workspace=apps/server",
     "install:all": "npm install --workspaces"

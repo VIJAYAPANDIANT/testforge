@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -66,6 +67,131 @@ ${stepBlocks}
  */
 const getRepoRoot = () => {
   return path.resolve(__dirname, '../../../..');
+};
+
+/**
+ * Resolves a safe, writable temporary directory for test spec files.
+ * In serverless environments (Vercel, AWS Lambda) or when repoRoot/scratch
+ * is not writable, safely falls back to os.tmpdir().
+ */
+export const getTempRunsDir = () => {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const serverlessDir = path.join(os.tmpdir(), 'testforge-runs');
+    if (!fs.existsSync(serverlessDir)) {
+      fs.mkdirSync(serverlessDir, { recursive: true });
+    }
+    return serverlessDir;
+  }
+
+  try {
+    const repoRoot = getRepoRoot();
+    const tempDir = path.resolve(repoRoot, 'scratch/testforge-runs');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    return tempDir;
+  } catch (err) {
+    const fallbackDir = path.join(os.tmpdir(), 'testforge-runs');
+    if (!fs.existsSync(fallbackDir)) {
+      fs.mkdirSync(fallbackDir, { recursive: true });
+    }
+    return fallbackDir;
+  }
+};
+
+/**
+ * Dispatches test execution to a dedicated TestForge worker HTTP microservice.
+ *
+ * @param {object} params
+ * @param {string} params.workerUrl - Base URL of the worker service (e.g., https://worker.testforge.app)
+ * @param {string} params.runId - Execution run ID
+ * @param {string} [params.testCaseId] - TestCase ID
+ * @param {string} params.scriptContent - Generated Playwright spec script content
+ * @param {string} [params.baseUrl] - Target application BASE_URL
+ * @param {number} [params.timeoutMs=60000] - Execution timeout
+ * @param {string} [params.apiKey] - Optional WORKER_API_KEY
+ * @returns {Promise<{ success: boolean, status: 'passed'|'failed', exitCode: number, stdout: string, stderr: string, durationMs: number, screenshotPath: string|null, stepResults?: any[] }>}
+ */
+export const executeViaRemoteWorker = async ({
+  workerUrl,
+  runId,
+  testCaseId,
+  scriptContent,
+  baseUrl,
+  timeoutMs = 60000,
+  apiKey = process.env.WORKER_API_KEY,
+}) => {
+  const normalizedUrl = workerUrl.replace(/\/+$/, '');
+  const endpoint = `${normalizedUrl}/execute`;
+
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs + 15000);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        runId,
+        testCaseId,
+        scriptContent,
+        baseUrl,
+        timeoutMs,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      return {
+        success: false,
+        status: 'failed',
+        exitCode: 1,
+        stdout: '',
+        stderr: `Remote worker returned HTTP ${response.status}: ${errBody || response.statusText}`,
+        durationMs: 0,
+        screenshotPath: null,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      success: !!data.success,
+      status: data.status || (data.success ? 'passed' : 'failed'),
+      exitCode: typeof data.exitCode === 'number' ? data.exitCode : (data.success ? 0 : 1),
+      stdout: data.stdout || '',
+      stderr: data.stderr || '',
+      durationMs: data.durationMs || 0,
+      screenshotPath: data.screenshotPath || null,
+      stepResults: data.stepResults || [],
+    };
+  } catch (err) {
+    clearTimeout(timer);
+    const isTimeout = err.name === 'AbortError';
+    const errorMsg = isTimeout
+      ? `Worker execution request timed out after ${timeoutMs}ms`
+      : `Failed to communicate with TestForge Worker at ${endpoint}: ${err.message}`;
+
+    return {
+      success: false,
+      status: 'failed',
+      exitCode: 1,
+      stdout: '',
+      stderr: errorMsg,
+      durationMs: 0,
+      screenshotPath: null,
+      error: errorMsg,
+    };
+  }
 };
 
 /**
@@ -192,50 +318,190 @@ export const runTestCaseExecution = async ({ testCase, environment, user, trigge
     status: 'queued',
   });
 
-  // 4. Create unique temporary file inside workspace scratch directory
   const repoRoot = getRepoRoot();
-  const tempDir = path.resolve(repoRoot, 'scratch/testforge-runs');
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
+  const workerCliPath = path.resolve(repoRoot, 'apps/worker/src/cli.js');
+  const workerServiceUrl = process.env.WORKER_SERVICE_URL;
+  const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const timeoutMs = parseInt(process.env.TEST_EXECUTION_TIMEOUT_MS, 10) || 60000;
+
+  // Case 1: Serverless environment (Vercel) without configured WORKER_SERVICE_URL
+  if (isServerless && !workerServiceUrl) {
+    const completedAt = new Date();
+    const serverlessMessage =
+      'Playwright browser execution requires a running TestForge worker instance. Serverless environments (Vercel) cannot launch Chromium browser processes directly. Please configure WORKER_SERVICE_URL in your Vercel project environment variables, or run TestForge locally using "npm run dev:all".';
+
+    runRecord.status = 'failed';
+    runRecord.completedAt = completedAt;
+    runRecord.exitCode = 1;
+    runRecord.stderr = serverlessMessage;
+    await safeSaveRun(runRecord);
+
+    await safeCreateRunResult({
+      run: runRecord._id,
+      status: 'failed',
+      exitCode: 1,
+      stderr: serverlessMessage,
+    });
+
+    emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+      runId,
+      status: 'failed',
+      error: 'Worker unavailable in serverless environment',
+      details: serverlessMessage,
+      completedAt: completedAt.toISOString(),
+    });
+
+    return {
+      statusCode: 503,
+      code: 'WORKER_UNAVAILABLE',
+      success: false,
+      message: 'Playwright worker is unavailable in this serverless environment.',
+      details: serverlessMessage,
+      data: {
+        runId,
+        status: 'failed',
+        exitCode: 1,
+        stderr: serverlessMessage,
+      },
+    };
   }
 
+  // Case 2: Remote worker service configured via WORKER_SERVICE_URL
+  if (workerServiceUrl) {
+    const startedAt = new Date();
+    const startTime = Date.now();
+    runRecord.status = 'running';
+    runRecord.startedAt = startedAt;
+    await safeSaveRun(runRecord);
+
+    emitRunEvent(runId, SOCKET_EVENTS.RUN_STARTED, {
+      runId,
+      status: 'running',
+      startedAt: startedAt.toISOString(),
+    });
+
+    console.log(`[TestForge] Dispatching execution to remote worker: ${workerServiceUrl} (Run: ${runId})`);
+
+    const remoteResult = await executeViaRemoteWorker({
+      workerUrl: workerServiceUrl,
+      runId,
+      testCaseId: testCase._id || testCase.id,
+      scriptContent,
+      baseUrl,
+      timeoutMs,
+      apiKey: process.env.WORKER_API_KEY,
+    });
+
+    const completedAt = new Date();
+    const durationMs = remoteResult.durationMs || (Date.now() - startTime);
+    const isPassed = remoteResult.success && remoteResult.status === 'passed';
+    const exitCode = remoteResult.exitCode !== undefined ? remoteResult.exitCode : (isPassed ? 0 : 1);
+    const safeStdout = truncateOutput(remoteResult.stdout || '');
+    const safeStderr = truncateOutput(remoteResult.stderr || '');
+
+    try {
+      runRecord.status = isPassed ? 'passed' : 'failed';
+      runRecord.completedAt = completedAt;
+      runRecord.durationMs = durationMs;
+      runRecord.exitCode = exitCode;
+      runRecord.stdout = safeStdout;
+      runRecord.stderr = safeStderr;
+      runRecord.screenshotPath = remoteResult.screenshotPath || null;
+      await safeSaveRun(runRecord);
+
+      await safeCreateRunResult({
+        run: runRecord._id,
+        status: isPassed ? 'passed' : 'failed',
+        exitCode,
+        stdout: safeStdout,
+        stderr: safeStderr,
+        screenshotPath: remoteResult.screenshotPath || null,
+        durationMs,
+        stepResults: remoteResult.stepResults || [],
+      });
+    } catch (dbError) {
+      console.error('[TestForge] Failed to persist remote execution Run/RunResult:', dbError.message);
+    }
+
+    if (isPassed) {
+      emitRunEvent(runId, SOCKET_EVENTS.RUN_COMPLETED, {
+        runId,
+        status: 'passed',
+        durationMs,
+        completedAt: completedAt.toISOString(),
+      });
+    } else {
+      emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+        runId,
+        status: 'failed',
+        durationMs,
+        error: safeStderr || 'Execution failed',
+        screenshotPath: remoteResult.screenshotPath || null,
+        completedAt: completedAt.toISOString(),
+      });
+    }
+
+    return {
+      statusCode: 200,
+      success: isPassed,
+      data: {
+        runId,
+        status: isPassed ? 'passed' : 'failed',
+        exitCode,
+        stdout: safeStdout,
+        stderr: safeStderr,
+        durationMs,
+        screenshotPath: remoteResult.screenshotPath || null,
+      },
+    };
+  }
+
+  // Case 3: Local worker process execution
+  if (!fs.existsSync(workerCliPath)) {
+    const completedAt = new Date();
+    const cliMissingMsg = `Worker CLI script not found at ${workerCliPath}`;
+    runRecord.status = 'failed';
+    runRecord.completedAt = completedAt;
+    runRecord.stderr = cliMissingMsg;
+    await safeSaveRun(runRecord);
+
+    await safeCreateRunResult({
+      run: runRecord._id,
+      status: 'failed',
+      exitCode: 1,
+      stderr: cliMissingMsg,
+    });
+
+    emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
+      runId,
+      status: 'failed',
+      error: 'Worker CLI script not found',
+      completedAt: completedAt.toISOString(),
+    });
+
+    return {
+      statusCode: 503,
+      code: 'WORKER_UNAVAILABLE',
+      success: false,
+      message: 'Worker CLI script not found.',
+      details: cliMissingMsg,
+      data: {
+        runId,
+        status: 'failed',
+        exitCode: 1,
+        stderr: cliMissingMsg,
+      },
+    };
+  }
+
+  // 4. Create unique temporary file inside safe temporary directory
+  const tempDir = getTempRunsDir();
   const tempFilePath = path.join(tempDir, `run-${runId}.spec.ts`);
 
   try {
     fs.writeFileSync(tempFilePath, scriptContent, 'utf8');
 
-    // 5. Resolve worker CLI path
-    const workerCliPath = path.resolve(repoRoot, 'apps/worker/src/cli.js');
-    if (!fs.existsSync(workerCliPath)) {
-      const completedAt = new Date();
-      runRecord.status = 'failed';
-      runRecord.completedAt = completedAt;
-      runRecord.stderr = 'Worker CLI script not found';
-      await safeSaveRun(runRecord);
-
-      await safeCreateRunResult({
-        run: runRecord._id,
-        status: 'failed',
-        exitCode: 1,
-        stderr: 'Worker CLI script not found',
-      });
-
-      emitRunEvent(runId, SOCKET_EVENTS.RUN_FAILED, {
-        runId,
-        status: 'failed',
-        error: 'Worker CLI script not found',
-        completedAt: completedAt.toISOString(),
-      });
-
-      return {
-        statusCode: 500,
-        success: false,
-        message: 'Worker CLI script not found',
-        details: `Worker CLI script not found at ${workerCliPath}`,
-      };
-    }
-
-    // 6. Update Run status to "running" immediately before worker process spawn
+    // 5. Update Run status to "running" immediately before worker process spawn
     const startedAt = new Date();
     const startTime = Date.now();
     runRecord.status = 'running';
@@ -248,8 +514,6 @@ export const runTestCaseExecution = async ({ testCase, environment, user, trigge
       status: 'running',
       startedAt: startedAt.toISOString(),
     });
-
-    const timeoutMs = parseInt(process.env.TEST_EXECUTION_TIMEOUT_MS, 10) || 60000;
 
     console.log(`[TestForge] Starting test execution for TestCase: ${testCase._id || testCase.id} (Run: ${runId})`);
 

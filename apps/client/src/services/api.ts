@@ -35,16 +35,23 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const resData = error.response?.data;
     const message =
-      error.response?.data?.message ||
-      (Array.isArray(error.response?.data?.errors)
-        ? error.response.data.errors.join(', ')
+      resData?.message ||
+      (Array.isArray(resData?.errors)
+        ? resData.errors.join(', ')
         : null) ||
       (error.code === 'ERR_NETWORK' || error.message === 'Network Error'
         ? `Network Error: Unable to connect to TestForge backend server at ${BASE_URL}. Please check that the server is running.`
         : error.message) ||
       'An unexpected error occurred';
-    return Promise.reject(new Error(message));
+
+    const enhancedError: any = new Error(message);
+    enhancedError.status = error.response?.status;
+    enhancedError.code = resData?.code;
+    enhancedError.details = resData?.details;
+    enhancedError.data = resData?.data;
+    return Promise.reject(enhancedError);
   }
 );
 

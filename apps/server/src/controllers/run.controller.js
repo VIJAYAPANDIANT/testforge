@@ -78,6 +78,17 @@ export const executeRun = async (req, res, next) => {
       });
     }
 
+    // Handle 503 / WORKER_UNAVAILABLE infrastructure failures from service
+    if (executionResult.statusCode === 503 || executionResult.code === 'WORKER_UNAVAILABLE') {
+      return res.status(503).json({
+        success: false,
+        code: 'WORKER_UNAVAILABLE',
+        message: executionResult.message || 'Worker unavailable in serverless environment',
+        details: executionResult.details,
+        data: executionResult.data,
+      });
+    }
+
     // Handle 500 infrastructure failures from service
     if (executionResult.statusCode === 500) {
       return res.status(500).json({

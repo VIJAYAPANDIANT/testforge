@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "start": "node src/server.js",
     "execute": "node src/cli.js",
     "test:run": "node src/cli.js"
   },

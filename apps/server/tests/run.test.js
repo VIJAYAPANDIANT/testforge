@@ -76,9 +76,8 @@ describe('Day 12 — Execution Service (apps/server)', () => {
               id: 's2',
               type: 'assertVisible',
               locator: {
-                strategy: 'role',
-                role: 'heading',
-                name: 'Example Domain',
+                strategy: 'css',
+                value: 'p[lang="en"]',
               },
             },
           ],
@@ -502,6 +501,125 @@ describe('Day 12 — Execution Service (apps/server)', () => {
         Project.countDocuments = origProjectCount;
         TestCase.countDocuments = origTestCaseCount;
         Run.countDocuments = origRunCount;
+      }
+    });
+  });
+
+  describe('Serverless Worker Architecture & WORKER_UNAVAILABLE', () => {
+    test('getTempRunsDir uses os.tmpdir() when VERCEL is set', async () => {
+      const { getTempRunsDir } = await import('../src/services/execution.service.js');
+      const origVercel = process.env.VERCEL;
+      process.env.VERCEL = '1';
+
+      try {
+        const tempDir = getTempRunsDir();
+        assert.ok(tempDir.includes('testforge-runs'));
+        assert.ok(fs.existsSync(tempDir));
+      } finally {
+        if (origVercel !== undefined) {
+          process.env.VERCEL = origVercel;
+        } else {
+          delete process.env.VERCEL;
+        }
+      }
+    });
+
+    test('runTestCaseExecution returns 503 WORKER_UNAVAILABLE when running on Vercel without WORKER_SERVICE_URL', async () => {
+      const origVercel = process.env.VERCEL;
+      const origWorkerUrl = process.env.WORKER_SERVICE_URL;
+
+      process.env.VERCEL = '1';
+      delete process.env.WORKER_SERVICE_URL;
+
+      const testCase = {
+        _id: '507f1f77bcf86cd799439099',
+        dsl: {
+          version: '1.0',
+          name: 'Serverless Worker Test',
+          steps: [{ id: 's1', type: 'navigate', url: 'https://example.com' }],
+        },
+      };
+
+      try {
+        const result = await runTestCaseExecution({ testCase });
+
+        assert.equal(result.statusCode, 503);
+        assert.equal(result.success, false);
+        assert.equal(result.code, 'WORKER_UNAVAILABLE');
+        assert.ok(result.message.includes('unavailable in this serverless environment'));
+        assert.ok(result.details.includes('WORKER_SERVICE_URL'));
+        assert.ok(result.data.runId);
+        assert.equal(result.data.status, 'failed');
+      } finally {
+        if (origVercel !== undefined) {
+          process.env.VERCEL = origVercel;
+        } else {
+          delete process.env.VERCEL;
+        }
+        if (origWorkerUrl !== undefined) {
+          process.env.WORKER_SERVICE_URL = origWorkerUrl;
+        }
+      }
+    });
+
+    test('runTestCaseExecution delegates to WORKER_SERVICE_URL when set', async () => {
+      const origWorkerUrl = process.env.WORKER_SERVICE_URL;
+      const origFetch = global.fetch;
+
+      process.env.WORKER_SERVICE_URL = 'https://mock-worker.testforge.internal';
+
+      // Mock remote worker response
+      global.fetch = async (url, options) => {
+        assert.ok(url.includes('https://mock-worker.testforge.internal/execute'));
+        assert.equal(options.method, 'POST');
+        const body = JSON.parse(options.body);
+        assert.equal(body.baseUrl, 'https://example.com');
+        assert.ok(body.runId);
+        assert.ok(body.scriptContent);
+
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            success: true,
+            status: 'passed',
+            exitCode: 0,
+            stdout: 'Remote worker test passed',
+            stderr: '',
+            durationMs: 150,
+            screenshotPath: null,
+            stepResults: [{ stepIndex: 0, stepType: 'navigate', status: 'passed' }],
+          }),
+        };
+      };
+
+      const testCase = {
+        _id: '507f1f77bcf86cd799439098',
+        dsl: {
+          version: '1.0',
+          name: 'Remote Worker Delegation Test',
+          steps: [{ id: 's1', type: 'navigate', url: 'https://example.com' }],
+        },
+      };
+
+      try {
+        const result = await runTestCaseExecution({
+          testCase,
+          environment: { baseUrl: 'https://example.com' },
+        });
+
+        assert.equal(result.statusCode, 200);
+        assert.equal(result.success, true);
+        assert.equal(result.data.status, 'passed');
+        assert.equal(result.data.exitCode, 0);
+        assert.equal(result.data.stdout, 'Remote worker test passed');
+      } finally {
+        global.fetch = origFetch;
+        if (origWorkerUrl !== undefined) {
+          process.env.WORKER_SERVICE_URL = origWorkerUrl;
+        } else {
+          delete process.env.WORKER_SERVICE_URL;
+        }
       }
     });
   });
