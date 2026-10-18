@@ -115,7 +115,7 @@ export const CanvasWorkflow: React.FC<CanvasWorkflowProps> = ({
       </div>
 
       {/* Canvas Body */}
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1.5">
         {steps.length === 0 ? (
           <div
             className={`h-full min-h-[320px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 text-center space-y-4 transition-all ${

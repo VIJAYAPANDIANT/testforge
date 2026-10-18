@@ -373,3 +373,34 @@ html.light [class*="bg-indigo-600"],
 html.light [class*="bg-indigo-600"] * {
   color: #FFFFFF !important;
 }
+
+/* Light Mode Selected Step Card & Badge Accents */
+html.light .bg-blue-950\/25,
+html.light .bg-blue-950\/20 {
+  background-color: rgba(239, 246, 255, 0.85) !important;
+}
+
+html.light .shadow-blue-950\/40 {
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08) !important;
+}
+
+html.light .text-blue-400:not(.btn-primary *):not([class*="bg-blue-600"] *) {
+  color: #2563EB !important;
+}
+
+html.light .text-purple-400 {
+  color: #7C3AED !important;
+}
+
+html.light .text-amber-400 {
+  color: #D97706 !important;
+}
+
+html.light .text-cyan-400 {
+  color: #0284C7 !important;
+}
+
+html.light .text-pink-400 {
+  color: #DB2777 !important;
+}
+
