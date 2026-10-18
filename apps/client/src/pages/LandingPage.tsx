@@ -162,9 +162,9 @@ export const LandingPage: React.FC = () => {
   const activeStep = DEMO_STEPS[activeStepIndex] || DEMO_STEPS[0];
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-blue-600/30 selection:text-blue-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-blue-600/30 selection:text-blue-300">
       {/* ─── A. Sticky Navigation Bar ────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-[#0b0f19]/90 backdrop-blur-md border-b border-slate-800/80 transition-all">
+      <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#0b0f19]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand Logo & Name */}
           <div
@@ -589,7 +589,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ─── D. Product Feature Section ───────────────────────────────────────── */}
-      <section id="features" className="py-20 bg-[#0e1322] border-b border-slate-800/70">
+      <section id="features" className="py-20 bg-slate-50 dark:bg-[#0e1322] border-b border-slate-200 dark:border-slate-800/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 font-mono">
@@ -802,7 +802,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ─── F. Architecture Section ─────────────────────────────────────────── */}
-      <section id="architecture" className="py-20 bg-[#0e1322] border-b border-slate-800/70">
+      <section id="architecture" className="py-20 bg-slate-50 dark:bg-[#0e1322] border-b border-slate-200 dark:border-slate-800/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 font-mono">
@@ -973,7 +973,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ─── H. Final CTA & Footer ───────────────────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-b from-[#0b0f19] to-[#0e1424] border-b border-slate-800/70">
+      <section className="py-20 bg-gradient-to-b from-white via-slate-50 to-slate-100 dark:from-[#0b0f19] dark:to-[#0e1424] border-b border-slate-200 dark:border-slate-800/70">
         <div className="max-w-4xl mx-auto px-4 text-center space-y-6">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono">
             <Zap className="w-3.5 h-3.5" />
@@ -1020,7 +1020,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-10 bg-[#090c14] text-xs text-slate-500">
+      <footer className="py-10 bg-slate-50 dark:bg-[#090c14] border-t border-slate-200 dark:border-transparent text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-2.5">

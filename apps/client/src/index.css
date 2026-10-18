@@ -265,9 +265,20 @@ html.light .bg-slate-800\/30 {
   background-color: #F1F5F9 !important;
 }
 
-/* Light Mode Gradient Banners (Dashboard hero, Auto-test card, Builder canvas bar) */
+/* Light Mode Gradient Banners (Dashboard hero, Auto-test card, Builder canvas bar, Final CTA) */
+html.light [class*="bg-gradient-to-b"][class*="from-\[\#0b0f19\]"],
+html.light [class*="bg-gradient-to-b"][class*="from-slate-950"],
 html.light [class*="bg-gradient-to-r"][class*="from-blue-950"],
-html.light [class*="bg-gradient-to-r"][class*="from-slate-900"] {
+html.light [class*="bg-gradient-to-r"][class*="from-slate-900"],
+html.light [class*="bg-gradient-to-r"][class*="from-purple-950"] {
+  background: linear-gradient(to bottom, #FFFFFF, #F8FAFC) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+}
+
+html.light [class*="bg-gradient-to-r"][class*="from-blue-950"],
+html.light [class*="bg-gradient-to-r"][class*="from-slate-900"],
+html.light [class*="bg-gradient-to-r"][class*="from-purple-950"] {
   background: linear-gradient(to right, #FFFFFF, #F8FAFC) !important;
   border-color: #E2E8F0 !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02) !important;
