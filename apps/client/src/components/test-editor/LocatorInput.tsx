@@ -98,25 +98,41 @@ export const LocatorInput: React.FC<LocatorInputProps> = ({
 
       {/* Dynamic Fields based on Strategy */}
       {locator.strategy === 'role' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end">
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">Role (e.g. button, textbox, heading)</label>
+            <label className="block text-[11px] font-medium text-slate-300 mb-1 truncate" title="Element Role">
+              Role
+            </label>
             <input
               type="text"
+              list="common-roles-list"
               value={locator.role || locator.value || ''}
               onChange={(e) => handleFieldChange('role', e.target.value)}
-              placeholder="button"
+              placeholder="button, textbox, heading..."
               className="input-field text-xs py-2"
               required
             />
+            <datalist id="common-roles-list">
+              <option value="button" />
+              <option value="textbox" />
+              <option value="link" />
+              <option value="heading" />
+              <option value="checkbox" />
+              <option value="combobox" />
+              <option value="dialog" />
+              <option value="menuitem" />
+              <option value="tab" />
+            </datalist>
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">Accessible Name (Optional)</label>
+            <label className="block text-[11px] font-medium text-slate-300 mb-1 truncate" title="Accessible Name (Optional)">
+              Accessible Name <span className="text-[10px] text-slate-500 font-normal">(optional)</span>
+            </label>
             <input
               type="text"
               value={locator.name || ''}
               onChange={(e) => handleFieldChange('name', e.target.value)}
-              placeholder="Submit"
+              placeholder="e.g. Submit"
               className="input-field text-xs py-2"
             />
           </div>
