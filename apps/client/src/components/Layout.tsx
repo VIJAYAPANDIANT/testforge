@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from './ThemeToggle';
 import { PlaySquare, LayoutDashboard, FolderGit2, LogOut, User as UserIcon, Menu, X, Home } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -66,8 +67,10 @@ export const Layout: React.FC = () => {
               </nav>
             </div>
 
-            {/* Right User & Logout */}
+            {/* Right Theme Toggle, User & Logout */}
             <div className="hidden md:flex items-center space-x-3">
+              <ThemeToggle />
+
               <div className="flex items-center space-x-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-full text-xs text-slate-300 shadow-inner">
                 <div className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
                   <UserIcon className="w-3 h-3" />
@@ -85,12 +88,14 @@ export const Layout: React.FC = () => {
               </button>
             </div>
 
-            {/* Mobile menu button */}
-            <div className="flex md:hidden items-center">
+            {/* Mobile menu button and theme toggle */}
+            <div className="flex md:hidden items-center space-x-2">
+              <ThemeToggle />
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                aria-label="Toggle navigation menu"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -101,9 +106,12 @@ export const Layout: React.FC = () => {
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-b border-slate-800 bg-[#111827] px-4 pt-2 pb-4 space-y-3">
-            <div className="flex items-center space-x-2 px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300">
-              <UserIcon className="w-4 h-4 text-blue-400" />
-              <span className="font-semibold text-slate-200">{user?.name || user?.email}</span>
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300">
+              <div className="flex items-center space-x-2 truncate">
+                <UserIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                <span className="font-semibold text-slate-200 truncate">{user?.name || user?.email}</span>
+              </div>
+              <ThemeToggle showLabel className="shrink-0" />
             </div>
 
             <nav className="space-y-1">

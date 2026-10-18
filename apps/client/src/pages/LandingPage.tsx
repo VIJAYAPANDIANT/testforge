@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 import {
   PlaySquare,
   Sparkles,
@@ -216,8 +217,9 @@ export const LandingPage: React.FC = () => {
             </a>
           </nav>
 
-          {/* Desktop Auth CTAs */}
+          {/* Desktop Auth CTAs & Theme Toggle */}
           <div className="hidden sm:flex items-center space-x-3">
+            <ThemeToggle />
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
@@ -245,8 +247,9 @@ export const LandingPage: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
-          <div className="flex md:hidden items-center">
+          {/* Mobile Hamburger Button & Theme Toggle */}
+          <div className="flex md:hidden items-center space-x-2">
+            <ThemeToggle />
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -293,6 +296,10 @@ export const LandingPage: React.FC = () => {
             </nav>
 
             <div className="pt-2 border-t border-slate-800/80 flex flex-col space-y-2">
+              <div className="flex items-center justify-between px-1 py-1">
+                <span className="text-xs text-slate-400 font-medium">Appearance</span>
+                <ThemeToggle showLabel />
+              </div>
               {isAuthenticated ? (
                 <Link
                   to="/dashboard"
