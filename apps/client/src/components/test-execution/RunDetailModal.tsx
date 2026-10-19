@@ -95,12 +95,16 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
   };
 
   const handleAnalyzeFailure = async (force: boolean = false) => {
-    if (!run?.id) return;
+    const activeRunId = runId || (run as any)?._id || (run as any)?.id;
+    if (!activeRunId) {
+      console.warn('[TestForge] Cannot trigger failure analysis: activeRunId is missing.');
+      return;
+    }
 
     try {
       setAnalyzing(true);
       setAiError(null);
-      const updatedAnalysis = await runService.analyzeRunFailure(run.id, force);
+      const updatedAnalysis = await runService.analyzeRunFailure(activeRunId, force);
 
       setData((prev) => {
         if (!prev || !prev.run) return prev;
@@ -153,37 +157,37 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-3xl bg-[#111827] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-3xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-[var(--bg-card-subtle)] border-b border-[var(--border-color)] px-6 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
               <FileCode className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
                 Run Details
                 {run?.status && getStatusBadge(run.status)}
               </h2>
-              <p className="text-xs text-slate-400">
-                {projectName} / <span className="text-slate-200">{testCaseName}</span>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {projectName} / <span className="text-[var(--text-primary)] font-medium">{testCaseName}</span>
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-200">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1 text-[var(--text-primary)]">
           {/* Loading State */}
           {loading && (
-            <div className="py-20 flex items-center justify-center text-slate-400 space-x-3">
+            <div className="py-20 flex items-center justify-center text-[var(--text-muted)] space-x-3">
               <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
               <span>Loading run execution details...</span>
             </div>
@@ -191,7 +195,7 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
           {/* Error State */}
           {!loading && error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center space-x-2.5">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-xs flex items-center space-x-2.5">
               <AlertTriangle className="w-5 h-5 shrink-0" />
               <span>{error}</span>
             </div>
@@ -200,36 +204,36 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
           {!loading && !error && run && (
             <>
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl text-xs">
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-0.5">Duration</span>
-                  <span className="font-mono font-semibold text-slate-200">
+                  <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Duration</span>
+                  <span className="font-mono font-semibold text-[var(--text-primary)]">
                     {run.durationMs ? `${(run.durationMs / 1000).toFixed(2)}s` : '—'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-0.5">Exit Code</span>
-                  <span className="font-mono font-semibold text-slate-200">
+                  <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Exit Code</span>
+                  <span className="font-mono font-semibold text-[var(--text-primary)]">
                     {run.exitCode !== null && run.exitCode !== undefined ? run.exitCode : '—'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-0.5">Started At</span>
-                  <span className="text-slate-300 text-[11px]">{formatDate(run.startedAt || run.createdAt)}</span>
+                  <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Started At</span>
+                  <span className="text-[var(--text-secondary)] text-[11px]">{formatDate(run.startedAt || run.createdAt)}</span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-0.5">Completed At</span>
-                  <span className="text-slate-300 text-[11px]">{formatDate(run.completedAt)}</span>
+                  <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Completed At</span>
+                  <span className="text-[var(--text-secondary)] text-[11px]">{formatDate(run.completedAt)}</span>
                 </div>
               </div>
 
               {/* Trigger Source & Webhook Metadata */}
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-xs space-y-2">
+              <div className="p-4 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl text-xs space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-medium">Trigger Source:</span>
+                  <span className="text-[var(--text-secondary)] font-medium">Trigger Source:</span>
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                       run.triggerSource === 'github'
@@ -285,17 +289,17 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
               {/* Day 29 — AI Failure Analysis Section (Only for Failed Runs) */}
               {run.status === 'failed' && (
-                <div className="p-5 bg-gradient-to-r from-purple-950/40 via-slate-900 to-slate-950 border border-purple-500/30 rounded-xl space-y-4 shadow-lg">
-                  <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
+                <div className="p-5 bg-gradient-to-r from-purple-50/80 via-white to-purple-50/50 dark:from-purple-950/40 dark:via-slate-900 dark:to-slate-950 border border-purple-200 dark:border-purple-500/30 rounded-xl space-y-4 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-purple-200/80 dark:border-purple-500/20 pb-3">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-600 dark:text-purple-300">
                         <Sparkles className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
                           <span>AI Failure Analysis</span>
                         </h3>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400">
                           Automated diagnosis based on execution evidence, worker logs, and DSL steps.
                         </p>
                       </div>
@@ -306,18 +310,18 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                       {analyzing ? (
                         <button
                           disabled
-                          className="px-3.5 py-1.5 bg-purple-900/50 border border-purple-500/30 text-purple-300 rounded-lg text-xs font-semibold flex items-center space-x-2 cursor-not-allowed"
+                          className="px-3.5 py-1.5 bg-purple-100 dark:bg-purple-900/50 border border-purple-300 dark:border-purple-500/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-semibold flex items-center space-x-2 cursor-not-allowed"
                         >
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 dark:text-purple-400" />
                           <span>Analyzing failure...</span>
                         </button>
                       ) : failureAnalysis?.status === 'completed' ? (
                         <button
                           onClick={() => handleAnalyzeFailure(true)}
-                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors"
                           title="Re-run AI Failure Analysis"
                         >
-                          <RotateCw className="w-3.5 h-3.5 text-purple-400" />
+                          <RotateCw className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                           <span>Re-analyze</span>
                         </button>
                       ) : (
@@ -334,14 +338,14 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
                   {/* Error State */}
                   {aiError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs flex items-center justify-between">
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 text-xs flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <ShieldAlert className="w-4 h-4 shrink-0 text-red-400" />
+                        <ShieldAlert className="w-4 h-4 shrink-0 text-red-500" />
                         <span>{aiError}</span>
                       </div>
                       <button
                         onClick={() => handleAnalyzeFailure(true)}
-                        className="underline font-semibold hover:text-red-300 ml-2"
+                        className="underline font-semibold hover:text-red-700 dark:hover:text-red-300 ml-2"
                       >
                         Try Again
                       </button>
@@ -350,14 +354,14 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
                   {/* AI Provider Error State */}
                   {!aiError && failureAnalysis?.status === 'failed' && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs flex items-center justify-between">
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 text-xs flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <ShieldAlert className="w-4 h-4 shrink-0 text-red-400" />
+                        <ShieldAlert className="w-4 h-4 shrink-0 text-red-500" />
                         <span>{failureAnalysis.errorMessage || 'Unable to analyze failure. AI provider unavailable or unconfigured.'}</span>
                       </div>
                       <button
                         onClick={() => handleAnalyzeFailure(true)}
-                        className="underline font-semibold hover:text-red-300 ml-2"
+                        className="underline font-semibold hover:text-red-700 dark:hover:text-red-300 ml-2"
                       >
                         Try Again
                       </button>
@@ -366,9 +370,9 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
                   {/* Not Analyzed Prompt */}
                   {!analyzing && !aiError && (!failureAnalysis || failureAnalysis.status === 'not_analyzed') && (
-                    <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-lg text-center space-y-2">
-                      <p className="text-xs text-slate-300">
-                        Click <strong className="text-purple-400">"Analyze Failure"</strong> to generate a structured AI explanation of what caused this test to fail, key evidence, and suggested fixes.
+                    <div className="p-4 bg-purple-50/60 dark:bg-slate-900/80 border border-purple-200/80 dark:border-slate-800 rounded-lg text-center space-y-2">
+                      <p className="text-xs text-slate-700 dark:text-slate-300">
+                        Click <strong className="text-purple-600 dark:text-purple-400">"Analyze Failure"</strong> to generate a structured AI explanation of what caused this test to fail, key evidence, and suggested fixes.
                       </p>
                     </div>
                   )}
@@ -378,55 +382,55 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                     <div className="space-y-4 text-xs">
                       {/* Summary */}
                       {failureAnalysis.summary && (
-                        <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
+                        <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-purple-100 dark:border-slate-800 space-y-1 shadow-sm">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
                             Summary
                           </span>
-                          <p className="text-slate-200 leading-relaxed">{failureAnalysis.summary}</p>
+                          <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{failureAnalysis.summary}</p>
                         </div>
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {/* Failed Step */}
                         {failureAnalysis.failedStep && (
-                          <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block">
+                          <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-purple-100 dark:border-slate-800 space-y-1 shadow-sm">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
                               Failed Step
                             </span>
-                            <p className="text-slate-200 font-mono text-[11px]">{failureAnalysis.failedStep}</p>
+                            <p className="text-slate-800 dark:text-slate-200 font-mono text-[11px]">{failureAnalysis.failedStep}</p>
                           </div>
                         )}
 
                         {/* Observed Error */}
                         {failureAnalysis.observedError && (
-                          <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block">
+                          <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-red-200 dark:border-slate-800 space-y-1 shadow-sm">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 block">
                               Observed Error
                             </span>
-                            <p className="text-red-300 font-mono text-[11px]">{failureAnalysis.observedError}</p>
+                            <p className="text-red-700 dark:text-red-300 font-mono text-[11px]">{failureAnalysis.observedError}</p>
                           </div>
                         )}
                       </div>
 
                       {/* Likely Cause */}
                       {failureAnalysis.likelyCause && (
-                        <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400 flex items-center space-x-1">
-                            <Lightbulb className="w-3.5 h-3.5 text-blue-400" />
+                        <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-purple-100 dark:border-slate-800 space-y-1 shadow-sm">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center space-x-1">
+                            <Lightbulb className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                             <span>Likely Cause</span>
                           </span>
-                          <p className="text-slate-200 leading-relaxed">{failureAnalysis.likelyCause}</p>
+                          <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{failureAnalysis.likelyCause}</p>
                         </div>
                       )}
 
                       {/* Key Evidence */}
                       {failureAnalysis.evidence && failureAnalysis.evidence.length > 0 && (
-                        <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1.5">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
-                            <Search className="w-3.5 h-3.5 text-slate-400" />
+                        <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-purple-100 dark:border-slate-800 space-y-1.5 shadow-sm">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center space-x-1">
+                            <Search className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                             <span>Evidence</span>
                           </span>
-                          <ul className="list-disc list-inside space-y-1 text-slate-300 pl-1">
+                          <ul className="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 pl-1">
                             {failureAnalysis.evidence.map((item, i) => (
                               <li key={i}>{item}</li>
                             ))}
@@ -437,11 +441,11 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                       {/* Suggested Investigation & Possible Fix */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {failureAnalysis.suggestedInvestigation && failureAnalysis.suggestedInvestigation.length > 0 && (
-                          <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1.5">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 block">
+                          <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-purple-100 dark:border-slate-800 space-y-1.5 shadow-sm">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
                               Suggested Investigation
                             </span>
-                            <ol className="list-decimal list-inside space-y-1 text-slate-300 pl-1">
+                            <ol className="list-decimal list-inside space-y-1 text-slate-700 dark:text-slate-300 pl-1">
                               {failureAnalysis.suggestedInvestigation.map((item, i) => (
                                 <li key={i}>{item}</li>
                               ))}
@@ -450,11 +454,11 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                         )}
 
                         {failureAnalysis.possibleFix && failureAnalysis.possibleFix.length > 0 && (
-                          <div className="bg-slate-950/70 p-3.5 rounded-lg border border-slate-800 space-y-1.5">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block">
+                          <div className="bg-white dark:bg-slate-950/70 p-3.5 rounded-lg border border-emerald-100 dark:border-slate-800 space-y-1.5 shadow-sm">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
                               Possible Fix
                             </span>
-                            <ul className="list-disc list-inside space-y-1 text-slate-300 pl-1">
+                            <ul className="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 pl-1">
                               {failureAnalysis.possibleFix.map((item, i) => (
                                 <li key={i}>{item}</li>
                               ))}
@@ -465,9 +469,9 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
                       {/* Uncertainty Disclaimer */}
                       {failureAnalysis.uncertainty && (
-                        <div className="text-[11px] text-slate-400 flex items-start space-x-1.5 pt-1">
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-start space-x-1.5 pt-1">
                           <HelpCircle className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                          <span><strong className="text-slate-300">Uncertainty:</strong> {failureAnalysis.uncertainty}</span>
+                          <span><strong className="text-slate-800 dark:text-slate-300">Uncertainty:</strong> {failureAnalysis.uncertainty}</span>
                         </div>
                       )}
                     </div>
@@ -477,16 +481,16 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
               {/* Step Results Section */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                   <span>Step Results</span>
                   {dslSteps.length > 0 && (
-                    <span className="text-xs text-slate-500 font-normal">
+                    <span className="text-xs text-[var(--text-muted)] font-normal">
                       ({dslSteps.length} step{dslSteps.length === 1 ? '' : 's'})
                     </span>
                   )}
                 </h3>
 
-                <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden bg-slate-900/30">
+                <div className="divide-y divide-[var(--border-color)] border border-[var(--border-color)] rounded-xl overflow-hidden bg-[var(--bg-card)]">
                   {(result?.stepResults && result.stepResults.length > 0
                     ? result.stepResults
                     : dslSteps.map((s, idx): RunStepResult => ({
@@ -506,8 +510,8 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                             <span
                               className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
                                 isPassed
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                  : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                  : 'bg-red-500/10 text-red-500 border-red-500/20'
                               }`}
                             >
                               {isPassed ? (
@@ -521,17 +525,17 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                               )}
                             </span>
 
-                            <span className="text-xs font-mono text-slate-500">
+                            <span className="text-xs font-mono text-[var(--text-muted)]">
                               Step {stepRes.stepIndex + 1}
                             </span>
 
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 uppercase">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--bg-card-subtle)] text-[var(--text-secondary)] border border-[var(--border-color)] uppercase">
                               {stepRes.stepType}
                             </span>
                           </div>
 
                           {stepRes.durationMs !== undefined && (
-                            <span className="text-xs font-mono text-slate-400">
+                            <span className="text-xs font-mono text-[var(--text-muted)]">
                               {stepRes.durationMs}ms
                             </span>
                           )}
@@ -539,9 +543,9 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
                         {/* Step Failure Error Message */}
                         {stepRes.status === 'failed' && (stepRes.error || run.stderr) && (
-                          <div className="mt-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs font-mono text-red-400 whitespace-pre-wrap">
-                            <div className="font-semibold text-red-300 mb-1 flex items-center gap-1.5">
-                              <AlertTriangle className="w-3.5 h-3.5 text-red-400" /> Error Details
+                          <div className="mt-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs font-mono text-red-600 dark:text-red-400 whitespace-pre-wrap">
+                            <div className="font-semibold text-red-700 dark:text-red-300 mb-1 flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Error Details
                             </div>
                             {stepRes.error || run.stderr}
                           </div>
@@ -556,8 +560,8 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
               {screenshotPath && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-amber-500" />
                       Failure Screenshot
                     </h3>
 
@@ -565,17 +569,17 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                       href={getScreenshotUrl(screenshotPath)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
+                      className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 font-medium"
                     >
                       Open Full Size <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
 
-                  <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex justify-center">
+                  <div className="p-3 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl flex justify-center">
                     <img
                       src={getScreenshotUrl(screenshotPath)}
                       alt="Execution Failure Screenshot"
-                      className="max-h-80 w-auto object-contain rounded-lg border border-slate-700/80 shadow-md"
+                      className="max-h-80 w-auto object-contain rounded-lg border border-[var(--border-color)] shadow-md"
                     />
                   </div>
                 </div>
@@ -583,12 +587,12 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
 
               {/* Console Logs Section */}
               {(run.stdout || run.stderr) && (
-                <div className="pt-2 border-t border-slate-800">
+                <div className="pt-2 border-t border-[var(--border-color)]">
                   <button
                     onClick={() => setShowLogs(!showLogs)}
-                    className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                   >
-                    <Terminal className="w-4 h-4 text-slate-500" />
+                    <Terminal className="w-4 h-4 text-[var(--text-muted)]" />
                     <span>{showLogs ? 'Hide Console Logs' : 'Show Console Logs'}</span>
                   </button>
 

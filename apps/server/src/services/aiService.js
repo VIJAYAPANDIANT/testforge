@@ -73,6 +73,105 @@ export const sanitizeFailureContext = (context) => {
  * @param {Object} rawFailureContext - Structured failure evidence from Run & RunResult
  * @returns {Promise<Object>} Formatted failure analysis object with status
  */
+/**
+ * Deterministic Playwright heuristic analysis engine.
+ * Evaluates execution logs, step types, locators, and failure traces to produce
+ * a structured failure analysis when AI is unavailable or as a fast baseline.
+ */
+export const generatePlaywrightHeuristicAnalysis = (context) => {
+  const errorMsg = (context.errorMessage || context.stderr || '').toString();
+  const stepType = context.failedStepType || 'action';
+  const stepIndex = context.failedStepIndex !== null && context.failedStepIndex !== undefined
+    ? context.failedStepIndex + 1
+    : null;
+  const stepDesc = stepIndex ? `Step ${stepIndex} (${stepType})` : `Failed step (${stepType})`;
+
+  let summary = `Test execution failed during ${stepDesc}.`;
+  let likelyCause = 'An unexpected browser execution error occurred.';
+  let observedError = errorMsg.split('\n')[0] || 'Unknown execution error';
+  const evidence = [];
+  const suggestedInvestigation = [];
+  const possibleFix = [];
+
+  if (stepIndex) {
+    evidence.push(`Execution stopped at Step ${stepIndex} (${stepType})`);
+  }
+  if (context.testCaseName) {
+    evidence.push(`Test case: "${context.testCaseName}"`);
+  }
+
+  // Case 1: Locator Timeout
+  if (/timeout.*exceeded/i.test(errorMsg) || /waiting for locator/i.test(errorMsg)) {
+    likelyCause = 'Element was not found or did not become actionable within the allotted timeout.';
+    summary = `${stepDesc} timed out waiting for the target element to appear or become actionable.`;
+    suggestedInvestigation.push('Check whether the element selector matches an existing element in the DOM.');
+    suggestedInvestigation.push('Verify if the element requires a previous user action or page transition to appear.');
+    suggestedInvestigation.push('Inspect network requests to ensure preceding API responses or assets loaded.');
+    possibleFix.push('Update the locator to a more stable selector (e.g. data-testid, role, or unique text).');
+    possibleFix.push('Increase the step timeout or add an explicit wait/assertion before interacting.');
+  }
+  // Case 2: Strict Mode Violation (multiple elements match)
+  else if (/strict mode violation/i.test(errorMsg) || /resolved to \d+ elements/i.test(errorMsg)) {
+    likelyCause = 'Locator matched multiple DOM elements, violating Playwright strict mode.';
+    summary = `${stepDesc} failed because the selector resolved to multiple elements instead of a unique one.`;
+    suggestedInvestigation.push('Identify all DOM elements that share the current selector.');
+    suggestedInvestigation.push('Check if dynamic elements (e.g., list items or duplicate buttons) share the same class or text.');
+    possibleFix.push('Refine the locator to be unique (e.g., scope by parent container, index, or unique attribute).');
+  }
+  // Case 3: Assertion / Expect failure
+  else if (/expect\(.*\)/i.test(errorMsg) || /assertion/i.test(errorMsg) || /toHaveText/i.test(errorMsg) || /toBeVisible/i.test(errorMsg)) {
+    likelyCause = 'Assertion failed because the observed element state or text did not match expected value.';
+    summary = `Assertion check failed at ${stepDesc}.`;
+    suggestedInvestigation.push('Compare expected text or visibility against the actual DOM content rendered in the browser.');
+    suggestedInvestigation.push('Inspect any recent application changes or dynamic data that may have altered the content.');
+    possibleFix.push('Update expected assertion value if the application requirements or copy have changed.');
+    possibleFix.push('Ensure asynchronous content finishes rendering before the assertion runs.');
+  }
+  // Case 4: Navigation / Network error
+  else if (/net::ERR_/i.test(errorMsg) || /navigation/i.test(errorMsg) || /failed to load/i.test(errorMsg)) {
+    likelyCause = 'Browser failed to navigate to the target URL or the server was unreachable.';
+    summary = `Page navigation failed during ${stepDesc}.`;
+    suggestedInvestigation.push('Verify that the target server / URL is online and reachable from the test runner.');
+    suggestedInvestigation.push('Check for CORS, SSL certificate errors, or network firewall blocks.');
+    possibleFix.push('Confirm base URL and route path in environment configuration.');
+    possibleFix.push('Ensure the web application is running before triggering automated tests.');
+  }
+  // Generic fallback
+  else {
+    suggestedInvestigation.push('Review the step details and verify the selector against the live DOM.');
+    suggestedInvestigation.push('Check browser console logs and worker execution stderr for additional clues.');
+    possibleFix.push('Verify locator stability and element visibility.');
+  }
+
+  if (context.screenshotAvailable) {
+    evidence.push('Failure screenshot captured and available in the run details view.');
+  }
+  if (context.exitCode !== null && context.exitCode !== undefined) {
+    evidence.push(`Worker process exited with code ${context.exitCode}`);
+  }
+
+  return {
+    status: 'completed',
+    summary,
+    failedStep: stepDesc,
+    observedError: observedError.length > 300 ? observedError.substring(0, 300) + '...' : observedError,
+    likelyCause,
+    evidence,
+    suggestedInvestigation,
+    possibleFix,
+    uncertainty: 'Analysis generated using Playwright heuristic diagnostic engine based on execution logs.',
+    analyzedAt: new Date(),
+    errorMessage: null,
+  };
+};
+
+/**
+ * Analyzes a test execution failure using Gemini AI provider.
+ * Falls back to Playwright Heuristic Diagnostic Engine if AI provider is temporarily unavailable.
+ *
+ * @param {Object} rawFailureContext - Structured failure evidence from Run & RunResult
+ * @returns {Promise<Object>} Formatted failure analysis object with status
+ */
 export const analyzeTestFailure = async (rawFailureContext) => {
   const sanitizedContext = sanitizeFailureContext(rawFailureContext);
 
@@ -104,10 +203,9 @@ RULES:
 
   const userPrompt = `Failure Evidence to Analyze:\n${JSON.stringify(sanitizedContext, null, 2)}`;
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(url, {
+  const callGeminiApi = async (model) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    return fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -125,24 +223,34 @@ RULES:
         },
       }),
     });
+  };
+
+  try {
+    const primaryModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    let response = await callGeminiApi(primaryModel);
+
+    // If primary model returns 404, gracefully fallback to gemini-1.5-flash
+    if (response.status === 404 && primaryModel !== 'gemini-1.5-flash') {
+      console.warn(`[TestForge AI] Model ${primaryModel} returned 404, retrying with gemini-1.5-flash...`);
+      response = await callGeminiApi('gemini-1.5-flash');
+    }
 
     if (!response.ok) {
       const errText = await response.text();
       console.error('[TestForge AI] Gemini API HTTP error:', response.status, errText);
-      return {
-        status: 'failed',
-        errorMessage: `AI provider HTTP error ${response.status}`,
-      };
+      // Fallback to heuristic diagnostic engine with fallback disclosure
+      const fallbackAnalysis = generatePlaywrightHeuristicAnalysis(sanitizedContext);
+      fallbackAnalysis.uncertainty = `AI service returned HTTP ${response.status}. Displaying Playwright heuristic diagnostic analysis.`;
+      return fallbackAnalysis;
     }
 
     const resData = await response.json();
     const candidateText = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!candidateText) {
-      return {
-        status: 'failed',
-        errorMessage: 'AI provider returned empty response candidate.',
-      };
+      const fallbackAnalysis = generatePlaywrightHeuristicAnalysis(sanitizedContext);
+      fallbackAnalysis.uncertainty = 'AI returned empty response. Displaying Playwright heuristic diagnostic analysis.';
+      return fallbackAnalysis;
     }
 
     // Clean backtick fences if returned
@@ -168,9 +276,8 @@ RULES:
     };
   } catch (err) {
     console.error('[TestForge AI] Failed to process AI failure analysis:', err.message);
-    return {
-      status: 'failed',
-      errorMessage: `AI analysis failed: ${err.message}`,
-    };
+    const fallbackAnalysis = generatePlaywrightHeuristicAnalysis(sanitizedContext);
+    fallbackAnalysis.uncertainty = `AI analysis encountered an error (${err.message}). Displaying Playwright heuristic diagnostic analysis.`;
+    return fallbackAnalysis;
   }
 };

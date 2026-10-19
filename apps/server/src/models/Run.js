@@ -101,6 +101,20 @@ const runSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (_doc, ret) => {
+        ret.id = ret._id ? ret._id.toString() : ret.id;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: (_doc, ret) => {
+        ret.id = ret._id ? ret._id.toString() : ret.id;
+        return ret;
+      },
+    },
   }
 );
 
