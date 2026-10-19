@@ -115,10 +115,10 @@ export const CanvasStepCard: React.FC<CanvasStepCardProps> = ({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onClick={onSelect}
-      className={`card transition-all p-3.5 cursor-pointer select-none group border ${
+      className={`relative rounded-xl transition-all p-3.5 cursor-pointer select-none group border-2 ${
         isSelected
-          ? 'ring-2 ring-blue-500 bg-blue-950/25 border-blue-500/60 shadow-lg shadow-blue-950/40'
-          : 'border-slate-800 bg-[#111827]/80 hover:border-slate-700 hover:bg-slate-900/90'
+          ? '!border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/40'
+          : 'border-slate-800/90 dark:border-slate-800/90 bg-[var(--bg-card)] hover:border-slate-700 hover:bg-[var(--bg-card-hover)]'
       }`}
     >
       <div className="flex items-start gap-2.5">

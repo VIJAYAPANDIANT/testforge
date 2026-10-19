@@ -95,27 +95,27 @@ export const CanvasWorkflow: React.FC<CanvasWorkflowProps> = ({
       onDragOver={handleCanvasDragOver}
       onDragLeave={handleCanvasDragLeave}
       onDrop={handleCanvasDrop}
-      className={`card h-full flex flex-col p-4 bg-[#111827]/90 border-slate-800 transition-all ${
+      className={`card h-full flex flex-col p-4 bg-[var(--bg-card)] border-[var(--border-color)] transition-all ${
         isDragOverCanvas ? 'ring-2 ring-blue-500/80 bg-blue-950/20 border-blue-500/50' : ''
       }`}
     >
       {/* Workflow Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+      <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-4">
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] flex items-center space-x-2">
             <span>Test Workflow Canvas</span>
-            <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">
+            <span className="px-2 py-0.5 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded text-[10px] font-mono text-[var(--text-secondary)]">
               {steps.length} step(s)
             </span>
           </h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
             Sequential test steps executed top to bottom in Playwright Chromium.
           </p>
         </div>
       </div>
 
       {/* Canvas Body */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1.5">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1.5 pt-2 pr-2">
         {steps.length === 0 ? (
           <div
             className={`h-full min-h-[320px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 text-center space-y-4 transition-all ${
@@ -141,7 +141,7 @@ export const CanvasWorkflow: React.FC<CanvasWorkflowProps> = ({
             </div>
           </div>
         ) : (
-          <div className="space-y-3 pb-8">
+          <div className="space-y-3 pt-1 pb-8">
             {steps.map((step, idx) => (
               <React.Fragment key={step.id || `step_${idx}`}>
                 {/* Connector Arrow */}
