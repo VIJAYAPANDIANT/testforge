@@ -16,8 +16,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/",
-              "host": ["{{baseUrl}}"],
-              "path": [""]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
             }
           },
           "response": []
@@ -29,8 +33,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "health"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
             }
           },
           "response": []
@@ -73,8 +82,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -112,8 +127,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -130,8 +151,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
             }
           },
           "response": []
@@ -178,8 +205,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/projects",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
             }
           },
           "response": []
@@ -196,8 +228,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/projects",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
             }
           },
           "response": []
@@ -214,8 +251,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}"
+              ]
             }
           },
           "response": []
@@ -240,8 +283,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}"
+              ]
             }
           },
           "response": []
@@ -258,8 +307,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}"
+              ]
             }
           },
           "response": []
@@ -306,8 +361,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}/environments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}", "environments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}",
+                "environments"
+              ]
             }
           },
           "response": []
@@ -324,8 +386,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}/environments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}", "environments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}",
+                "environments"
+              ]
             }
           },
           "response": []
@@ -342,8 +411,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/environments/{{environmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "environments", "{{environmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "environments",
+                "{{environmentId}}"
+              ]
             }
           },
           "response": []
@@ -368,8 +443,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/environments/{{environmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "environments", "{{environmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "environments",
+                "{{environmentId}}"
+              ]
             }
           },
           "response": []
@@ -386,8 +467,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/environments/{{environmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "environments", "{{environmentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "environments",
+                "{{environmentId}}"
+              ]
             }
           },
           "response": []
@@ -434,8 +521,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}/test-cases",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}", "test-cases"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}",
+                "test-cases"
+              ]
             }
           },
           "response": []
@@ -452,8 +546,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/projects/{{projectId}}/test-cases",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "projects", "{{projectId}}", "test-cases"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{projectId}}",
+                "test-cases"
+              ]
             }
           },
           "response": []
@@ -470,8 +571,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/test-cases/{{testCaseId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "test-cases", "{{testCaseId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "test-cases",
+                "{{testCaseId}}"
+              ]
             }
           },
           "response": []
@@ -496,8 +603,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/test-cases/{{testCaseId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "test-cases", "{{testCaseId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "test-cases",
+                "{{testCaseId}}"
+              ]
             }
           },
           "response": []
@@ -514,8 +627,298 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/test-cases/{{testCaseId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "test-cases", "{{testCaseId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "test-cases",
+                "{{testCaseId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Execution & Runs",
+      "item": [
+        {
+          "name": "Execute Test Case",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 202) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var rId = (jsonData.data && (jsonData.data.runId || jsonData.data.id || jsonData.data._id)) || null;",
+                  "    if (rId) {",
+                  "        pm.environment.set(\"runId\", rId);",
+                  "        console.log(\"Saved runId:\", rId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testCaseId\": \"{{testCaseId}}\",\n  \"environmentId\": \"{{environmentId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/runs/execute",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "runs",
+                "execute"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Run Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/runs/{{runId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "runs",
+                "{{runId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Runs History (Filtered)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/runs?projectId={{projectId}}&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{projectId}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Stats & Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/runs/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "runs",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Failure Analysis",
+      "item": [
+        {
+          "name": "Analyze Run Failure",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/runs/{{runId}}/analyze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "runs",
+                "{{runId}}",
+                "analyze"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Force Re-Analyze Run Failure",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/runs/{{runId}}/analyze?force=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "runs",
+                "{{runId}}",
+                "analyze"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CI/CD Webhooks",
+      "item": [
+        {
+          "name": "Trigger Generic Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-webhook-secret",
+                "value": "{{webhookSecret}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch\": \"main\",\n  \"commit\": \"a1b2c3d4e5f6\",\n  \"repository\": \"myorg/my-shop\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/generic/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "webhooks",
+                "generic",
+                "{{projectId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trigger GitHub Push Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-github-event",
+                "value": "push"
+              },
+              {
+                "key": "x-github-delivery",
+                "value": "723b7e70-8d96-4f40-8f6a-495c6b8f3a21"
+              },
+              {
+                "key": "x-hub-signature-256",
+                "value": "sha256=computed_hmac_sha256_hash"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ref\": \"refs/heads/main\",\n  \"repository\": {\n    \"full_name\": \"myorg/my-shop\",\n    \"clone_url\": \"https://github.com/myorg/my-shop.git\"\n  },\n  \"head_commit\": {\n    \"id\": \"a1b2c3d4e5f6\",\n    \"message\": \"feat: update checkout page\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/github/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "webhooks",
+                "github",
+                "{{projectId}}"
+              ]
             }
           },
           "response": []

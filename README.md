@@ -381,6 +381,21 @@ npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspac
 
 ---
 
+## 📖 Technical Documentation Hub
+
+Detailed engineering specifications, integration walkthroughs, and testing guides are available in the [`docs/`](./docs/README.md) directory:
+
+- 🏛️ [**System Architecture & Topology**](./docs/ARCHITECTURE.md) — Monorepo layout, execution sequence, database ER model, and worker architecture.
+- 🧪 [**REST API & WebSocket Testing Guide**](./docs/API_TESTING.md) — 25+ request end-to-end testing sequence, real-time Socket.IO events, and Postman setup.
+- 🤖 [**AI Failure Diagnosis Specification**](./docs/AI_FAILURE_ANALYSIS.md) — Data sanitization, Google Gemini 2.5/1.5 Flash fallback, and Playwright heuristic engine.
+- 🐙 [**CI/CD Webhooks & Auto-Testing**](./docs/WEBHOOKS.md) — GitHub push webhooks, HMAC SHA-256 verification, branch filtering, and auto-test metrics.
+- 🚀 [**Production Deployment Guide**](./docs/DEPLOYMENT.md) — Vercel setup (SPA + Serverless Express), MongoDB connection pooling, and Playwright worker containers.
+- 📋 [**Test DSL Specification**](./docs/DSL_SPEC.md) — JSON schema v1.0, 7 supported action steps, and locator strategies.
+- ⚙️ [**Playwright Codegen Engine**](./docs/CODEGEN.md) — Visual DSL compilation to clean Playwright TypeScript (`.spec.ts`).
+- 📬 [**Postman Collection & Environment**](./docs/postman/) — Postman collection with automated test scripts and environment variables.
+
+---
+
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
