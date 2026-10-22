@@ -8,6 +8,7 @@ Welcome to the **TestForge** technical documentation repository. This directory 
 
 | Document | Purpose & Key Topics | Audience |
 |---|---|---|
+| [**Project Report (Google Drive)**](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing) | Complete engineering and technical project report. | Evaluators, Reviewers, Engineers |
 | [**Architecture Guide**](./ARCHITECTURE.md) | High-level system topology, monorepo packages, end-to-end execution pipeline, database ER diagram, remote worker delegation, and security boundaries. | Architects, Backend Engineers |
 | [**API Testing Guide**](./API_TESTING.md) | Complete guide for testing REST endpoints and WebSockets with Postman or cURL: Auth, Projects, Environments, TestCases, Execution, AI Analysis, and Webhooks. | QA Engineers, API Developers |
 | [**AI Failure Analysis**](./AI_FAILURE_ANALYSIS.md) | Detailed specification of the Day 29–30 AI root-cause diagnosis engine: Secret redaction, Google Gemini AI integration, model fallback, and deterministic Playwright heuristic engine. | Full-stack Engineers, QA Leads |
@@ -21,17 +22,20 @@ Welcome to the **TestForge** technical documentation repository. This directory 
 
 ## 🚀 Quick Navigation for Common Tasks
 
-### 1. I want to test the API locally
+### 1. I want to read the project report
+👉 Read the [TestForge Project Report on Google Drive](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing).
+
+### 2. I want to test the API locally
 👉 Follow the [API Testing Guide](./API_TESTING.md) and import the [Postman Collection](./postman/TestForge_API.postman_collection.json).
 
-### 2. I want to connect GitHub to run tests automatically on code push
+### 3. I want to connect GitHub to run tests automatically on code push
 👉 Follow the [CI/CD Webhooks Guide](./WEBHOOKS.md).
 
-### 3. I want to understand how Gemini AI diagnoses test failures
+### 4. I want to understand how Gemini AI diagnoses test failures
 👉 Read the [AI Failure Analysis Specification](./AI_FAILURE_ANALYSIS.md).
 
-### 4. I want to deploy TestForge to Vercel and production
+### 5. I want to deploy TestForge to Vercel and production
 👉 Follow the [Production Deployment & Operations Guide](./DEPLOYMENT.md).
 
-### 5. I want to understand the Test DSL and Playwright code generator
+### 6. I want to understand the Test DSL and Playwright code generator
 👉 Read the [Test DSL Specification](./DSL_SPEC.md) and [Playwright Codegen Engine Guide](./CODEGEN.md).

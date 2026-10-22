@@ -9,6 +9,7 @@
 <p align="center">
   <a href="https://testforge-client.vercel.app"><img src="https://img.shields.io/badge/Production_App-Live_on_Vercel-000000?logo=vercel" alt="Live App on Vercel" /></a>
   <a href="https://testforge-server.vercel.app"><img src="https://img.shields.io/badge/Production_API-Live_on_Vercel-000000?logo=vercel" alt="Live API on Vercel" /></a>
+  <a href="https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing"><img src="https://img.shields.io/badge/Project_Report-Google_Drive-4285F4?logo=googledrive&logoColor=white" alt="Project Report" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=nodedotjs" alt="Node.js Version" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript" alt="TypeScript" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.0-61DAFB?logo=react" alt="React" /></a>
@@ -24,6 +25,8 @@
 ---
 
 ## 📌 Executive Summary
+
+> 📄 **Project Report**: Read the complete engineering project report on [Google Drive](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing).
 
 **TestForge** is an end-to-end visual web test automation platform built for software development teams, QA engineers, and product managers. It enables users to construct, maintain, execute, and troubleshoot automated browser tests visually—**without writing manual Playwright code**.
 
@@ -385,6 +388,7 @@ npm test --workspace=packages/dsl-schema --workspace=packages/codegen --workspac
 
 Detailed engineering specifications, integration walkthroughs, and testing guides are available in the [`docs/`](./docs/README.md) directory:
 
+- 📑 [**TestForge Project Report (Google Drive)**](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing) — Comprehensive engineering and technical project report.
 - 🏛️ [**System Architecture & Topology**](./docs/ARCHITECTURE.md) — Monorepo layout, execution sequence, database ER model, and worker architecture.
 - 🧪 [**REST API & WebSocket Testing Guide**](./docs/API_TESTING.md) — 25+ request end-to-end testing sequence, real-time Socket.IO events, and Postman setup.
 - 🤖 [**AI Failure Diagnosis Specification**](./docs/AI_FAILURE_ANALYSIS.md) — Data sanitization, Google Gemini 2.5/1.5 Flash fallback, and Playwright heuristic engine.
