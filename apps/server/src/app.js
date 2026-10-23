@@ -33,6 +33,18 @@ app.use(
   })
 );
 
+// Also parse urlencoded request bodies (supports GitHub webhooks with application/x-www-form-urlencoded)
+app.use(
+  express.urlencoded({
+    extended: true,
+    verify: (req, _res, buf) => {
+      if (!req.rawBody) {
+        req.rawBody = buf;
+      }
+    },
+  })
+);
+
 // CORS configuration supporting single or comma-separated origins plus local dev & production Vercel fallbacks
 const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 const parsedOrigins = clientOrigin.includes(',')

@@ -31,10 +31,11 @@ const verifyGitHubSignature = (headerSignature, rawBody, secret) => {
       ? rawBody
       : Buffer.from(typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody || {}));
 
-    const expectedHex = crypto.createHmac('sha256', secret).update(rawBuffer).digest('hex');
+    const trimmedSecret = typeof secret === 'string' ? secret.trim() : String(secret);
+    const expectedHex = crypto.createHmac('sha256', trimmedSecret).update(rawBuffer).digest('hex');
     const expectedSignature = `sha256=${expectedHex}`;
 
-    const bufA = Buffer.from(headerSignature);
+    const bufA = Buffer.from(headerSignature.trim());
     const bufB = Buffer.from(expectedSignature);
 
     if (bufA.length !== bufB.length) return false;
@@ -234,11 +235,19 @@ export const handleGitHubWebhook = async (req, res, next) => {
       req.headers['x-hub-signature-256'] || req.headers['X-Hub-Signature-256'];
     const configuredSecret = project.autoTest?.webhookSecret;
 
-    if (!configuredSecret || !signatureHeader) {
-      console.warn(`[GitHub Webhook] Missing signature header or secret for project ${projectId}`);
+    if (!configuredSecret) {
+      console.warn(`[GitHub Webhook] Project ${projectId} has no webhookSecret configured in TestForge`);
       return res.status(403).json({
         success: false,
-        message: 'Invalid or missing GitHub webhook signature',
+        message: 'No webhook secret configured in TestForge for this project. Please save settings in TestForge.',
+      });
+    }
+
+    if (!signatureHeader) {
+      console.warn(`[GitHub Webhook] Missing X-Hub-Signature-256 header for project ${projectId}`);
+      return res.status(403).json({
+        success: false,
+        message: 'Missing GitHub X-Hub-Signature-256 header. Please ensure you entered the Webhook Secret in your GitHub webhook settings.',
       });
     }
 
@@ -252,13 +261,39 @@ export const handleGitHubWebhook = async (req, res, next) => {
       console.warn(`[GitHub Webhook] Invalid signature verification for project ${projectId}`);
       return res.status(403).json({
         success: false,
-        message: 'Invalid or missing GitHub webhook signature',
+        message: 'Invalid GitHub webhook signature. The secret configured in GitHub does not match the Webhook Secret in TestForge.',
       });
     }
 
-    // 4. Validate GitHub event header (support 'push' for Day 27)
+    // Parse incoming payload (supports application/json as well as application/x-www-form-urlencoded)
+    let payload = req.body || {};
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload);
+      } catch (err) {
+        // preserve
+      }
+    } else if (payload.payload && typeof payload.payload === 'string') {
+      try {
+        payload = JSON.parse(payload.payload);
+      } catch (err) {
+        // preserve
+      }
+    }
+
+    // 4. Validate GitHub event header (support 'ping' and 'push')
     const githubEvent =
       req.headers['x-github-event'] || req.headers['X-GitHub-Event'] || 'push';
+
+    if (githubEvent === 'ping') {
+      console.log(`[GitHub Webhook] Ping event received successfully for project ${projectId}`);
+      return res.status(200).json({
+        success: true,
+        message: 'GitHub webhook ping received successfully! TestForge is ready to receive push events.',
+        zen: payload.zen || 'Non-blocking is better than blocking.',
+        hook_id: payload.hook_id,
+      });
+    }
 
     if (githubEvent !== 'push') {
       console.log(`[GitHub Webhook] Ignored non-push event '${githubEvent}' for project ${projectId}`);
@@ -280,7 +315,7 @@ export const handleGitHubWebhook = async (req, res, next) => {
     }
 
     // 6. Parse GitHub push payload
-    const { ref = '', after = '', before = '', repository = {} } = req.body || {};
+    const { ref = '', after = '', before = '', repository = {} } = payload || {};
 
     const incomingRepo = repository?.full_name || (repository?.name ? `${repository.owner?.login || ''}/${repository.name}` : '');
     const configuredRepo = project.autoTest?.github?.repository || '';

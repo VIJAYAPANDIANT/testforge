@@ -25,6 +25,8 @@ import {
   Shield,
   CheckSquare,
   Square,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 export const ProjectDetailPage: React.FC = () => {
@@ -48,6 +50,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
   const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   // Edit Project Modal State
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
@@ -550,12 +553,22 @@ export const ProjectDetailPage: React.FC = () => {
                 Webhook Secret
               </label>
               <div className="flex items-center space-x-2">
-                <input
-                  type="password"
-                  readOnly
-                  value={autoSecret}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-400 font-mono select-all"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type={showSecret ? "text" : "password"}
+                    readOnly
+                    value={autoSecret}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-3 pr-9 py-2 text-xs text-slate-400 font-mono select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-0.5"
+                    title={showSecret ? "Hide Secret" : "Show Secret"}
+                  >
+                    {showSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={handleCopySecret}
