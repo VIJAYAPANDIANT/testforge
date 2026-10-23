@@ -9,6 +9,7 @@
 <p align="center">
   <a href="https://testforge-client.vercel.app"><img src="https://img.shields.io/badge/Production_App-Live_on_Vercel-000000?logo=vercel" alt="Live App on Vercel" /></a>
   <a href="https://testforge-server.vercel.app"><img src="https://img.shields.io/badge/Production_API-Live_on_Vercel-000000?logo=vercel" alt="Live API on Vercel" /></a>
+  <a href="https://github.com/VIJAYAPANDIANT/testforge-e-commerce"><img src="https://img.shields.io/badge/Testing_Repo-testforge--e--commerce-blue?logo=github" alt="Testing Repository" /></a>
   <a href="https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing"><img src="https://img.shields.io/badge/Project_Report-Google_Drive-4285F4?logo=googledrive&logoColor=white" alt="Project Report" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=nodedotjs" alt="Node.js Version" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript" alt="TypeScript" /></a>
@@ -34,7 +35,92 @@ TestForge converts visual test workflows into a structured JSON Domain Specific 
 
 ---
 
-## 📋 Functional & Non-Functional Requirements
+## 🚀 Live Deployment, Testing Repository & Demo Credentials
+
+| Resource | Link / Information | Description |
+| :--- | :--- | :--- |
+| **Production Web App** | [testforge-client.vercel.app](https://testforge-client.vercel.app) | Live React 18 single-page application hosted on Vercel |
+| **Production API & Webhooks** | [testforge-server.vercel.app](https://testforge-server.vercel.app) | Express.js REST API & GitHub Webhook receiver |
+| **Testing Target Repository** | [VIJAYAPANDIANT/testforge-e-commerce](https://github.com/VIJAYAPANDIANT/testforge-e-commerce) | Live E-Commerce sample repo configured with TestForge CI/CD webhooks |
+| **Engineering Project Report** | [Google Drive Document](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing) | Complete engineering and technical project report |
+
+### 🔑 Demo Account Credentials
+
+Use the following pre-configured credentials to sign in and test the platform immediately:
+
+| Field | Demo Credential |
+| :--- | :--- |
+| **Email** | `vijayt@gmail.com` |
+| **Password** | `123456` |
+
+> [!TIP]
+> After signing in, navigate to **Projects** ➔ **TestForge E-Commerce** to see pre-configured automated test cases, webhook settings, and historical execution results.
+
+---
+
+## 🌐 Production Deployment Architecture Explained
+
+TestForge uses a decoupled, hybrid-cloud production architecture combining serverless scalability with isolated browser test execution:
+
+```mermaid
+graph TD
+    subgraph CloudLayer["Vercel Cloud Production"]
+        SPA["Frontend SPA (React 18 + Vite)<br/>testforge-client.vercel.app"]
+        API["Serverless REST API (Express.js)<br/>testforge-server.vercel.app"]
+    end
+
+    subgraph DatabaseLayer["Data Persistence"]
+        DB[("MongoDB Atlas Cloud<br/>M0 Cluster (Replica Set)")]
+    end
+
+    subgraph CIPlatform["Continuous Integration"]
+        Repo["Testing Target Repository<br/>github.com/VIJAYAPANDIANT/testforge-e-commerce"]
+    end
+
+    subgraph ExecutionLayer["Browser Test Execution Engine"]
+        LocalWorker["Local Developer Engine (Chromium)<br/>npm run dev:all (Port 5000 / 5173)"]
+        CloudWorker["Dedicated Cloud Worker (Docker)<br/>WORKER_SERVICE_URL (Port 5001)"]
+    end
+
+    SPA -->|"REST API Requests / JWT Bearer"| API
+    API -->|"Mongoose Connection Pooling"| DB
+    Repo -->|"Push Webhook POST (HMAC SHA-256)"| API
+    API -.->|"Executes Playwright tests"| LocalWorker
+    API -.->|"Delegates execution via HTTP"| CloudWorker
+```
+
+### 1. Frontend Client Deployment (`apps/client`)
+- **Hosting Platform**: Vercel Static Hosting ([testforge-client.vercel.app](https://testforge-client.vercel.app)).
+- **Tech Stack**: React 18, TypeScript, Tailwind CSS, Lucide React, and Vite.
+- **Routing**: Single Page Application (SPA) routing with client-side history API. Configured via `vercel.json` rewrite (`/(.*) -> /index.html`).
+- **API Communication**: Communicates with the production backend via `VITE_API_URL=https://testforge-server.vercel.app`.
+
+### 2. Backend Serverless API (`apps/server`)
+- **Hosting Platform**: Vercel Serverless Functions (`@vercel/node`) ([testforge-server.vercel.app](https://testforge-server.vercel.app)).
+- **Tech Stack**: Express.js 4.19, Mongoose 8, Socket.IO 4.8.
+- **Connection Optimization**: Employs global MongoDB Atlas connection pooling (`connectDB()`) to reuse open connections across warm serverless invocations and prevent socket exhaustion.
+- **Security & Body Parsing**: Configured with `express.json()` and `express.urlencoded()` verifying and preserving raw payload buffers for cryptographic HMAC signature verification.
+
+### 3. GitHub CI/CD Webhook Integration (`apps/server`)
+- **Configured Target**: [`VIJAYAPANDIANT/testforge-e-commerce`](https://github.com/VIJAYAPANDIANT/testforge-e-commerce) on branch `main`.
+- **Payload Endpoint**: `https://testforge-server.vercel.app/api/webhooks/github/:projectId`.
+- **Cryptographic Verification**:
+  - Each webhook delivery is cryptographically verified against the project's secret using **HMAC SHA-256** (`X-Hub-Signature-256`).
+  - Utilizes constant-time comparison (`crypto.timingSafeEqual`) to eliminate timing-attack vulnerabilities.
+- **Event Flow**:
+  - Automatically handles GitHub `ping` events for connection verification.
+  - On `push` events, verifies branch and repository matching, deduplicates deliveries using `X-GitHub-Delivery`, and triggers all configured automated test cases.
+
+### 4. Browser Execution Architecture (`apps/worker`)
+Because serverless runtimes (such as Vercel and AWS Lambda) lack the Linux desktop dependencies and display servers required to spawn Chromium processes, TestForge provides a two-tier execution strategy:
+- **Local Execution Engine (Recommended for Development & Demos)**:
+  - Running `npm run dev:all` locally on a developer workstation allows the local backend server to directly spawn headless/headed **Playwright Chromium** (`apps/worker/src/cli.js`).
+  - Full DOM interaction, element screenshots, and trace artifacts are generated with native performance.
+- **Dedicated Worker Microservice (`apps/worker/src/server.js`)**:
+  - In fully remote cloud setups, `apps/worker` runs as a standalone microservice inside a container (Docker on Render, Railway, or VPS).
+  - The Vercel serverless function forwards the generated `.spec.ts` script to the worker via HTTP (`POST /execute`), which executes the test in Chromium and returns the step events and screenshots.
+
+---
 
 ### ⚙️ Functional Requirements
 
