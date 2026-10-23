@@ -239,7 +239,8 @@ export const handleGitHubWebhook = async (req, res, next) => {
       console.warn(`[GitHub Webhook] Project ${projectId} has no webhookSecret configured in TestForge`);
       return res.status(403).json({
         success: false,
-        message: 'No webhook secret configured in TestForge for this project. Please save settings in TestForge.',
+        message: 'Invalid or missing GitHub webhook signature',
+        details: 'No webhook secret configured in TestForge for this project. Please save settings in TestForge.',
       });
     }
 
@@ -247,7 +248,8 @@ export const handleGitHubWebhook = async (req, res, next) => {
       console.warn(`[GitHub Webhook] Missing X-Hub-Signature-256 header for project ${projectId}`);
       return res.status(403).json({
         success: false,
-        message: 'Missing GitHub X-Hub-Signature-256 header. Please ensure you entered the Webhook Secret in your GitHub webhook settings.',
+        message: 'Invalid or missing GitHub webhook signature',
+        details: 'Missing GitHub X-Hub-Signature-256 header. Please ensure you entered the Webhook Secret in your GitHub webhook settings.',
       });
     }
 
@@ -261,7 +263,8 @@ export const handleGitHubWebhook = async (req, res, next) => {
       console.warn(`[GitHub Webhook] Invalid signature verification for project ${projectId}`);
       return res.status(403).json({
         success: false,
-        message: 'Invalid GitHub webhook signature. The secret configured in GitHub does not match the Webhook Secret in TestForge.',
+        message: 'Invalid or missing GitHub webhook signature',
+        details: 'The HMAC signature does not match the Webhook Secret configured in TestForge.',
       });
     }
 

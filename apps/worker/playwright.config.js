@@ -29,5 +29,19 @@ export default defineConfig({
         headless: process.env.HEADLESS !== 'false',
       },
     },
+    {
+      name: 'firefox',
+      use: {
+        browserName: 'firefox',
+        headless: process.env.HEADLESS !== 'false',
+      },
+    },
+    {
+      name: 'webkit',
+      use: {
+        browserName: 'webkit',
+        headless: process.env.HEADLESS !== 'false',
+      },
+    },
   ],
 });

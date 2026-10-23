@@ -14,7 +14,7 @@ import { analyzeTestFailure } from '../services/aiService.js';
  */
 export const executeRun = async (req, res, next) => {
   try {
-    const { testCaseId, environmentId } = req.body || {};
+    const { testCaseId, environmentId, browser = 'chromium' } = req.body || {};
 
     // 1. Validate request body
     if (!testCaseId || typeof testCaseId !== 'string' || testCaseId.trim().length === 0) {
@@ -67,7 +67,12 @@ export const executeRun = async (req, res, next) => {
     }
 
     // 4. Delegate execution to service
-    const executionResult = await runTestCaseExecution({ testCase, environment, user: req.user });
+    const executionResult = await runTestCaseExecution({
+      testCase,
+      environment,
+      user: req.user,
+      browser: ['chromium', 'firefox', 'webkit'].includes(browser) ? browser : 'chromium',
+    });
 
     // Handle 400 validation failures from service
     if (executionResult.statusCode === 400) {

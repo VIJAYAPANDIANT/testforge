@@ -224,6 +224,7 @@ export interface RunItem {
   createdAt: string;
   exitCode?: number | null;
   screenshotPath?: string | null;
+  browser?: 'chromium' | 'firefox' | 'webkit';
   triggerSource?: TriggerSource;
   triggerMetadata?: TriggerMetadata | null;
   failureAnalysis?: FailureAnalysis | null;
@@ -266,6 +267,7 @@ export interface RunDetailData {
     stdout?: string;
     stderr?: string;
     screenshotPath?: string | null;
+    browser?: 'chromium' | 'firefox' | 'webkit';
     triggerSource?: TriggerSource;
     triggerMetadata?: TriggerMetadata | null;
     failureAnalysis?: FailureAnalysis | null;

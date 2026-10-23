@@ -19,6 +19,10 @@ const parseArgs = () => {
       options.runId = args[++i];
     } else if (arg.startsWith('--run-id=')) {
       options.runId = arg.split('=')[1];
+    } else if (arg === '--browser' && i + 1 < args.length) {
+      options.browser = args[++i];
+    } else if (arg.startsWith('--browser=')) {
+      options.browser = arg.split('=')[1];
     } else if (arg === '--headed') {
       options.headless = false;
     } else if (!arg.startsWith('-') && !testFilePath) {

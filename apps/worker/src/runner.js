@@ -166,11 +166,14 @@ export const runPlaywrightTest = (testFilePath, options = {}) => {
     const normalizedOutputDir = outputDir.replace(/\\/g, '/');
     const configPath = path.resolve(__dirname, '../playwright.config.js').replace(/\\/g, '/');
 
+    const browserCandidate = (options.browser || process.env.PLAYWRIGHT_BROWSER || 'chromium').toLowerCase().trim();
+    const targetBrowser = ['chromium', 'firefox', 'webkit'].includes(browserCandidate) ? browserCandidate : 'chromium';
+
     const args = [
       playwrightCliPath,
       'test',
       normalizedPath,
-      '--project=chromium',
+      `--project=${targetBrowser}`,
       `--config=${configPath}`,
       `--output=${normalizedOutputDir}`,
     ];

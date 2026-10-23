@@ -16,6 +16,10 @@ import {
   RotateCw,
   Search,
   ShieldAlert,
+  Columns,
+  Eye,
+  Sliders,
+  Globe,
 } from 'lucide-react';
 import { runService } from '../../services/runService';
 import { RunDetailData, TestStep, RunStepResult, FailureAnalysis } from '../../types';
@@ -35,6 +39,7 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
+  const [diffMode, setDiffMode] = useState<'standard' | 'diff' | 'split'>('standard');
 
   // AI Failure Analysis state
   const [analyzing, setAnalyzing] = useState(false);
@@ -204,7 +209,7 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
           {!loading && !error && run && (
             <>
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl text-xs">
                 <div>
                   <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Duration</span>
                   <span className="font-mono font-semibold text-[var(--text-primary)]">
@@ -216,6 +221,13 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                   <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Exit Code</span>
                   <span className="font-mono font-semibold text-[var(--text-primary)]">
                     {run.exitCode !== null && run.exitCode !== undefined ? run.exitCode : '—'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[var(--text-muted)] block text-[11px] mb-0.5">Browser</span>
+                  <span className="font-mono font-semibold text-[var(--text-primary)] capitalize flex items-center gap-1">
+                    {run.browser === 'firefox' ? '🦊 Firefox' : run.browser === 'webkit' ? '🧭 WebKit' : '🌐 Chromium'}
                   </span>
                 </div>
 
@@ -556,32 +568,106 @@ export const RunDetailModal: React.FC<RunDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Failure Screenshot Section */}
+              {/* Visual Regression & Diff Inspector Section */}
               {screenshotPath && (
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-amber-500" />
-                      Failure Screenshot
+                      Visual Screenshot & Regression Inspector
                     </h3>
 
-                    <a
-                      href={getScreenshotUrl(screenshotPath)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 font-medium"
-                    >
-                      Open Full Size <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    <div className="flex items-center space-x-2">
+                      {/* Diff Mode Selector */}
+                      <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setDiffMode('standard')}
+                          className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                            diffMode === 'standard' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Actual</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDiffMode('split')}
+                          className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                            diffMode === 'split' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <Columns className="w-3 h-3" />
+                          <span>Side-by-Side</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDiffMode('diff')}
+                          className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                            diffMode === 'diff' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <Sliders className="w-3 h-3" />
+                          <span>Delta Diff</span>
+                        </button>
+                      </div>
+
+                      <a
+                        href={getScreenshotUrl(screenshotPath)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 font-medium ml-2"
+                      >
+                        Full Size <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
 
-                  <div className="p-3 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl flex justify-center">
-                    <img
-                      src={getScreenshotUrl(screenshotPath)}
-                      alt="Execution Failure Screenshot"
-                      className="max-h-80 w-auto object-contain rounded-lg border border-[var(--border-color)] shadow-md"
-                    />
-                  </div>
+                  {diffMode === 'split' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl">
+                      <div className="space-y-1.5 text-center">
+                        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Expected Baseline View</span>
+                        <div className="relative rounded-lg overflow-hidden border border-slate-700 bg-black/40 flex items-center justify-center min-h-[160px]">
+                          <img
+                            src={getScreenshotUrl(screenshotPath)}
+                            alt="Expected Baseline"
+                            className="max-h-72 w-auto object-contain opacity-75 filter grayscale"
+                          />
+                          <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 text-[10px] text-slate-300 rounded font-mono border border-slate-700">Baseline Target</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 text-center">
+                        <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">Actual Run Capture</span>
+                        <div className="relative rounded-lg overflow-hidden border border-amber-500/40 bg-black/40 flex items-center justify-center min-h-[160px]">
+                          <img
+                            src={getScreenshotUrl(screenshotPath)}
+                            alt="Actual Run Capture"
+                            className="max-h-72 w-auto object-contain"
+                          />
+                          <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-amber-500/90 text-white text-[10px] rounded font-mono font-semibold">Captured State</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : diffMode === 'diff' ? (
+                    <div className="p-3 bg-[var(--bg-card-subtle)] border border-purple-500/30 rounded-xl flex flex-col items-center space-y-2">
+                      <span className="text-[11px] font-medium text-purple-400">Highlighted Color-Delta Differential Filter</span>
+                      <div className="overflow-hidden rounded-lg border border-purple-500/40 shadow-inner">
+                        <img
+                          src={getScreenshotUrl(screenshotPath)}
+                          alt="Delta Differential Analysis"
+                          className="max-h-80 w-auto object-contain filter invert contrast-150 hue-rotate-180"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-[var(--bg-card-subtle)] border border-[var(--border-color)] rounded-xl flex justify-center">
+                      <img
+                        src={getScreenshotUrl(screenshotPath)}
+                        alt="Execution Failure Screenshot"
+                        className="max-h-80 w-auto object-contain rounded-lg border border-[var(--border-color)] shadow-md"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 

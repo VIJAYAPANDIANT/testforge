@@ -27,11 +27,13 @@ export const runService = {
    */
   async startRun(
     testCaseId: string,
-    environmentId?: string
+    environmentId?: string,
+    browser?: 'chromium' | 'firefox' | 'webkit'
   ): Promise<{ runId: string; status: string }> {
     const response = await api.post<ApiResponse<{ runId: string; status: string }>>('/api/runs', {
       testCaseId,
       ...(environmentId ? { environmentId } : {}),
+      browser: browser || 'chromium',
     });
 
     if (!response.data.data?.runId) {

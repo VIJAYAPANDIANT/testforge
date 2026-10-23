@@ -64,6 +64,12 @@ const runSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    browser: {
+      type: String,
+      enum: ['chromium', 'firefox', 'webkit'],
+      default: 'chromium',
+      index: true,
+    },
     triggerSource: {
       type: String,
       enum: ['manual', 'webhook', 'github'],

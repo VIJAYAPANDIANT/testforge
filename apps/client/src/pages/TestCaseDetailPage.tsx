@@ -34,6 +34,8 @@ import {
   ArrowLeft,
   Clock,
   Play,
+  Globe,
+  Compass,
 } from 'lucide-react';
 
 export const TestCaseDetailPage: React.FC = () => {
@@ -47,6 +49,7 @@ export const TestCaseDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Live Execution State (Day 19)
+  const [selectedBrowser, setSelectedBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
   const [runState, setRunState] = useState<LiveRunState | null>(null);
   const [isRunningTest, setIsRunningTest] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -167,8 +170,8 @@ export const TestCaseDetailPage: React.FC = () => {
         steps: initialSteps,
       });
 
-      // 1. Trigger backend execution endpoint POST /api/runs
-      const runRes = await runService.startRun(testCase.id);
+      // 1. Trigger backend execution endpoint POST /api/runs with selected browser
+      const runRes = await runService.startRun(testCase.id, undefined, selectedBrowser);
       const currentRunId = runRes.runId;
 
       setRunState((prev) => (prev ? { ...prev, runId: currentRunId, status: 'queued' } : null));
@@ -404,11 +407,54 @@ export const TestCaseDetailPage: React.FC = () => {
 
           <div className="flex items-center space-x-2.5 self-end sm:self-center">
             {/* Run Test Button */}
+            {/* Multi-Browser Matrix Selector (Day 30 Enterprise Feature) */}
+            <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-lg p-0.5 text-xs shadow-inner">
+              <button
+                type="button"
+                onClick={() => setSelectedBrowser('chromium')}
+                className={`px-2.5 py-1.5 rounded-md font-medium transition-all flex items-center space-x-1.5 ${
+                  selectedBrowser === 'chromium'
+                    ? 'bg-indigo-600 text-white shadow font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Google Chromium / Chrome"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Chromium</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedBrowser('firefox')}
+                className={`px-2.5 py-1.5 rounded-md font-medium transition-all flex items-center space-x-1.5 ${
+                  selectedBrowser === 'firefox'
+                    ? 'bg-amber-600 text-white shadow font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Mozilla Firefox"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Firefox</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedBrowser('webkit')}
+                className={`px-2.5 py-1.5 rounded-md font-medium transition-all flex items-center space-x-1.5 ${
+                  selectedBrowser === 'webkit'
+                    ? 'bg-blue-600 text-white shadow font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Apple WebKit / Safari"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>WebKit</span>
+              </button>
+            </div>
+
             <button
               onClick={handleRunTest}
               disabled={isRunningTest || stepsCount === 0}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/50 disabled:text-emerald-400/50 text-white rounded-lg font-semibold text-xs transition-colors flex items-center space-x-2 shadow-lg shadow-emerald-950/20"
-              title={stepsCount === 0 ? 'Add at least 1 step to run test' : 'Run Playwright test in Chromium'}
+              title={stepsCount === 0 ? 'Add at least 1 step to run test' : `Run Playwright test in ${selectedBrowser}`}
             >
               {isRunningTest ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />

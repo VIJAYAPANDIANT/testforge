@@ -233,7 +233,7 @@ const safeCreateRunResult = async (payload) => {
  * @param {object} [params.triggerMetadata] - Optional metadata (branch, commit, repository, event, eventId)
  * @returns {Promise<{ statusCode?: number, success: boolean, data?: { runId: string, status: string, exitCode: number|null, stdout: string, stderr: string, durationMs: number, screenshotPath: string|null, signal?: string }, error?: string, message?: string, details?: any }>}
  */
-export const runTestCaseExecution = async ({ testCase, environment, user, triggerSource = 'manual', triggerMetadata = null }) => {
+export const runTestCaseExecution = async ({ testCase, environment, user, triggerSource = 'manual', triggerMetadata = null, browser = 'chromium' }) => {
   if (!testCase || !testCase.dsl) {
     return {
       statusCode: 400,
@@ -272,6 +272,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user, trigge
   const testCaseId = mongoose.Types.ObjectId.isValid(testCase._id || testCase.id) ? (testCase._id || testCase.id) : new mongoose.Types.ObjectId();
 
   let runRecord = null;
+  const effectiveBrowser = ['chromium', 'firefox', 'webkit'].includes(browser) ? browser : 'chromium';
   if (mongoose.connection.readyState !== 0) {
     try {
       runRecord = await Run.create({
@@ -280,6 +281,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user, trigge
         user: userId,
         environment: environment?._id || environment?.id || null,
         status: 'queued',
+        browser: effectiveBrowser,
         triggerSource: triggerSource || 'manual',
         ...(triggerMetadata ? { triggerMetadata } : {}),
       });
@@ -297,6 +299,7 @@ export const runTestCaseExecution = async ({ testCase, environment, user, trigge
       project: projectId,
       user: userId,
       status: 'queued',
+      browser: effectiveBrowser,
       triggerSource: triggerSource || 'manual',
       triggerMetadata: triggerMetadata || null,
       startedAt: null,
@@ -530,7 +533,12 @@ export const runTestCaseExecution = async ({ testCase, environment, user, trigge
         FORCE_COLOR: '0',
       };
 
-      const child = spawn(process.execPath, [workerCliPath, tempFilePath, '--run-id', runId], {
+      const workerArgs = [workerCliPath, tempFilePath, '--run-id', runId];
+      if (effectiveBrowser && ['chromium', 'firefox', 'webkit'].includes(effectiveBrowser)) {
+        workerArgs.push('--browser', effectiveBrowser);
+      }
+
+      const child = spawn(process.execPath, workerArgs, {
         cwd: repoRoot,
         env: childEnv,
       });
