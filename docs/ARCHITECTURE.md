@@ -15,6 +15,7 @@ graph TB
         Builder["Visual Workflow Canvas (7 Steps)"]
         Inspector["Step Properties & Locator Panel"]
         LiveViewer["Live Run Modal & Socket.IO Listener"]
+        VisualDiff["Visual Regression & Delta Diff Inspector"]
         Theme["Dark / Light Mode Token System"]
     end
 
@@ -34,7 +35,7 @@ graph TB
 
     subgraph ExecutionLayer["Test Execution Engine (apps/worker)"]
         WorkerManager["Worker Execution Manager"]
-        BrowserSpawn["Playwright Chromium Headless Process"]
+        BrowserSpawn["Playwright Multi-Browser Engine<br/>(Chromium / Firefox / WebKit)"]
         SpecSandbox["Isolated Execution Sandbox"]
         Artifacts["Screenshots & Console Logs Capturer"]
         RemoteWorker["Remote Worker Service (HTTP)"]
@@ -204,6 +205,7 @@ erDiagram
         ObjectId user FK
         ObjectId environment FK
         string status "queued | running | passed | failed"
+        string browser "chromium | firefox | webkit"
         string triggerSource "manual | webhook | github"
         json triggerMetadata
         string screenshotPath

@@ -154,6 +154,14 @@ Because serverless runtimes (such as Vercel and AWS Lambda) lack the Linux deskt
    - Automatic credential redaction (passwords, JWTs, Bearer headers, API keys sanitized to `<REDACTED>`).
    - Generative failure diagnosis powered by `gemini-2.5-flash`, providing structured JSON outputs (root cause, observed error, technical explanation, evidence, suggested investigation, and fix recommendations).
 
+8. **Multi-Browser Matrix Engine**:
+   - Interactive cross-browser execution switching between **Google Chromium**, **Mozilla Firefox**, and **Apple WebKit (Safari)**.
+   - Dynamic runner dispatch and browser metadata persistence on every execution run.
+
+9. **Visual Regression & Delta Diff Inspector**:
+   - Enterprise visual inspector featuring 3 view modes: **Actual Screenshot**, **Side-by-Side Comparison** (Baseline vs Captured State), and **Color-Delta Differential Filter**.
+   - Immediate visual identification of layout shifts, CSS breakages, and UI regression deltas.
+
 ### 🛡️ Non-Functional Requirements
 
 1. **Security & Data Isolation**:
@@ -306,6 +314,7 @@ erDiagram
         string user FK
         string environment FK
         string status "queued | running | passed | failed"
+        string browser "chromium | firefox | webkit"
         string triggerSource "manual | webhook | auto"
         json triggerMetadata
         date startedAt
@@ -369,7 +378,7 @@ erDiagram
 | **REST Server**        | Express.js 4.19                    | HTTP REST API routing and middleware                 |
 | **Database**           | MongoDB Atlas / Mongoose 8         | Document database and ODM modeling                   |
 | **Real-Time Engine**   | Socket.IO 4.8                      | WebSockets execution event streaming                 |
-| **Test Automation**    | Playwright 1.44                    | Headless Chromium browser automation engine          |
+| **Test Automation**    | Playwright 1.50 / 1.64             | Multi-browser engine (Chromium, Firefox, WebKit)     |
 | **AI Diagnosis**       | Google Gemini 2.5 Flash            | Server-side AI failure analysis engine               |
 | **Security & Auth**    | JWT + bcryptjs + crypto            | Token authentication, password hashing, HMAC SHA-256 |
 | **Deployment Host**    | Vercel                             | Cloud production hosting for frontend & serverless   |
@@ -395,11 +404,16 @@ erDiagram
 
 - **Action Blocks Palette**: Click or drag to add `Navigate`, `Click`, `Fill`, `Assert Visible`, `Assert Text`, `Wait`, or `Screenshot` steps.
 - **Step Property Inspector**: Edit step target locator strategy (`role`, `text`, `css`), value, timeout, and fallback locator properties.
+- **Multi-Browser Matrix Toggle**: Seamlessly select target browser (`🌐 Chromium`, `🦊 Firefox`, `🧭 WebKit`) directly beside the execution button.
 - **Toolbar**: `[ Save Test Case ]`, `[ Run Test ]`, step reordering handles, step duplication, step deletion, and instant DSL validation indicator.
 
-### 4. Run Detail & AI Failure Analysis Modal
+### 4. Run Detail, Visual Regression & AI Failure Modal
 
-- **Execution Overview**: Duration, Exit Code, Started At, Completed At, Trigger Source & Webhook Metadata badges.
+- **Execution Overview**: Duration, Exit Code, Browser Engine (`Chromium`, `Firefox`, `WebKit`), Started At, Completed At, Trigger Source & Webhook Metadata badges.
+- **Visual Regression & Diff Inspector**:
+  - `Actual Screenshot`: High-resolution view of execution captures.
+  - `Side-by-Side Comparison`: Compare baseline target against actual execution state.
+  - `Color-Delta Diff`: Differential highlighting filter for immediate visual regression detection.
 - **AI Failure Analysis Card** (Failed Runs Only):
   - `[ 🪄 Analyze Failure ]` action button.
   - **Summary**, **Failed Step**, **Observed Error**, **Likely Technical Cause**, **Evidence**, **Suggested Investigation**, **Possible Fix**, and **Uncertainty**.

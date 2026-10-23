@@ -4,12 +4,24 @@ Welcome to the **TestForge** technical documentation repository. This directory 
 
 ---
 
+## 🚀 Quick Reference & Demo Environment
+
+| Resource | Value / Link | Description |
+|---|---|---|
+| **Production Web App** | [testforge-client.vercel.app](https://testforge-client.vercel.app) | Live React frontend hosted on Vercel |
+| **Production API** | [testforge-server.vercel.app](https://testforge-server.vercel.app) | Express.js REST API & Webhook receiver |
+| **Testing Target Repo** | [VIJAYAPANDIANT/testforge-e-commerce](https://github.com/VIJAYAPANDIANT/testforge-e-commerce) | Live E-Commerce target configured with CI/CD webhooks |
+| **Demo Account** | `vijayt@gmail.com` / `123456` | Pre-configured test account with sample projects & runs |
+| **Project Report** | [Google Drive Document](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing) | Complete engineering and technical project report |
+
+---
+
 ## 📚 Documentation Index
 
 | Document | Purpose & Key Topics | Audience |
 |---|---|---|
 | [**Project Report (Google Drive)**](https://drive.google.com/file/d/19JE4UA5X1P6EidDvMb-xShW9iweflCSE/view?usp=sharing) | Complete engineering and technical project report. | Evaluators, Reviewers, Engineers |
-| [**Architecture Guide**](./ARCHITECTURE.md) | High-level system topology, monorepo packages, end-to-end execution pipeline, database ER diagram, remote worker delegation, and security boundaries. | Architects, Backend Engineers |
+| [**Architecture Guide**](./ARCHITECTURE.md) | High-level system topology, monorepo packages, Multi-Browser Matrix (Chromium/Firefox/WebKit), Visual Regression & Delta Diff, database ER diagram, and security boundaries. | Architects, Backend Engineers |
 | [**API Testing Guide**](./API_TESTING.md) | Complete guide for testing REST endpoints and WebSockets with Postman or cURL: Auth, Projects, Environments, TestCases, Execution, AI Analysis, and Webhooks. | QA Engineers, API Developers |
 | [**AI Failure Analysis**](./AI_FAILURE_ANALYSIS.md) | Detailed specification of the Day 29–30 AI root-cause diagnosis engine: Secret redaction, Google Gemini AI integration, model fallback, and deterministic Playwright heuristic engine. | Full-stack Engineers, QA Leads |
 | [**CI/CD Webhooks Guide**](./WEBHOOKS.md) | Setting up GitHub push webhooks and generic CI/CD pipelines, HMAC SHA-256 verification, branch filtering, delivery deduplication, and auto-test metrics. | DevOps, CI/CD Engineers |

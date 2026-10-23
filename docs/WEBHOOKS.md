@@ -124,3 +124,17 @@ The dashboard (`GET /api/runs/stats`) aggregates these into high-visibility CI/C
 | `autoPassRate` | Pass rate percentage specifically for automated CI/CD runs |
 
 *These metrics display in the project dashboard, allowing development teams to isolate CI/CD regression trends from exploratory manual test runs.*
+
+---
+
+## 4. Live Reference Implementation (`testforge-e-commerce`)
+
+A live production webhook has been configured and verified for end-to-end testing:
+
+- **Target Repository**: [`https://github.com/VIJAYAPANDIANT/testforge-e-commerce`](https://github.com/VIJAYAPANDIANT/testforge-e-commerce)
+- **Settings Path**: GitHub Repository ➔ Settings ➔ Webhooks
+- **Configured Payload URL**: `https://testforge-server.vercel.app/api/webhooks/github/6ad38cd009236f514119ac6d`
+- **Content Type**: `application/json` *(server also supports `application/x-www-form-urlencoded`)*
+- **Active Events**: `push`
+- **Delivery Status**: Verified with green checkmark (`200 OK`) and automatic ping handshake.
+- **Triggered Test Suite**: Automatically queues and executes the `Navigate` test case in Chromium when commits are pushed to `main`.

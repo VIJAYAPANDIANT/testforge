@@ -175,3 +175,32 @@ Expected response:
   "timestamp": "2026-10-20T10:00:00.000Z"
 }
 ```
+
+---
+
+## 7. Live CI/CD Target & Demo Credentials
+
+### 7.1 Testing Target Repository
+- **Repository URL**: [`https://github.com/VIJAYAPANDIANT/testforge-e-commerce`](https://github.com/VIJAYAPANDIANT/testforge-e-commerce)
+- **Target Branch**: `main`
+- **Connected Webhook Endpoint**: `https://testforge-server.vercel.app/api/webhooks/github/6ad38cd009236f514119ac6d`
+- **Security**: Cryptographically validated via HMAC SHA-256 (`X-Hub-Signature-256`).
+
+### 7.2 Pre-Configured Demo Account
+| Field | Value |
+|---|---|
+| **Email** | `vijayt@gmail.com` |
+| **Password** | `123456` |
+| **Pre-Configured Project** | **TestForge E-Commerce** (ID: `6ad38cd009236f514119ac6d`) |
+
+### 7.3 Multi-Browser Matrix Execution
+The Playwright execution worker supports cross-browser testing across:
+- **`chromium`**: Default high-performance headless Chromium.
+- **`firefox`**: Mozilla Gecko browser automation engine.
+- **`webkit`**: Apple WebKit (Safari) rendering engine.
+
+Triggering a test with a specific browser can be specified via the UI selector or programmatically:
+```bash
+# Direct CLI execution targeting Firefox
+node apps/worker/src/cli.js <spec-file.spec.ts> --browser=firefox
+```
